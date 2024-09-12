@@ -48,16 +48,18 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: '#98A2FF',
-    marginTop: 70,
+    marginTop: 50,
     textAlign: 'center',
   },
   logo: {
     width: 70,
+    marginTop: -50,
   },
   subtitle: {
     fontSize: 14,
     color: '#B3B3B3',
     textAlign: 'center',
+    marginTop: -70,
   },
   button: {
     backgroundColor: '#98A2FF',
