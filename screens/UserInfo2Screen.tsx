@@ -4,12 +4,10 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  Modal,
   StyleSheet,
   ScrollView,
 } from 'react-native';
-import {Picker} from '@react-native-picker/picker';
-import {WheelPicker} from 'react-native-wheel-picker-android';
+import {Dropdown} from 'react-native-element-dropdown';
 import {StackNavigationProp} from '@react-navigation/stack';
 import {RootStackParamList} from '../navigation/MainNavigation';
 
@@ -22,15 +20,29 @@ type Props = {
   navigation: Info2ScreenNavigationProp;
 };
 
+// 10분 단위로 시간을 선택할 수 있는 데이터 생성
+const timeData = Array.from({length: 24 * 6}, (_, i) => {
+  const hours = Math.floor(i / 6).toString().padStart(2, '0');
+  const minutes = (i % 6) * 10;
+  return {
+    label: `${hours}:${minutes.toString().padStart(2, '0')}`,
+    value: `${hours}:${minutes.toString().padStart(2, '0')}`,
+  };
+});
+
+const salaryTypeData = [
+  {label: '월급', value: '월급'},
+  {label: '주급', value: '주급'},
+  {label: '일급', value: '일급'},
+  {label: '시급', value: '시급'},
+];
+
 export default function Info2Screen({navigation}: Props) {
   const [salaryType, setSalaryType] = useState('월급');
   const [salary, setSalary] = useState('');
   const [workDays, setWorkDays] = useState<string[]>([]);
   const [startTime, setStartTime] = useState('09:00');
-  const [endTime, setEndTime] = useState('18:30');
-
-  const [isStartTimePickerVisible, setStartTimePickerVisible] = useState(false);
-  const [isEndTimePickerVisible, setEndTimePickerVisible] = useState(false);
+  const [endTime, setEndTime] = useState('18:00');
 
   const toggleWorkDay = (day: string) => {
     if (day === '매일') {
@@ -57,22 +69,26 @@ export default function Info2Screen({navigation}: Props) {
           수령하시는 급여와 근무시간을 알려주세요.
         </Text>
 
-        {/* 급여 기준 Picker */}
         <Text style={styles.label}>기준</Text>
         <View
           style={[
-            styles.pickerContainer,
-            salaryType && styles.completedInput, // 선택된 경우 보라색 테두리
+            styles.salaryDropdownContainer,
+            salaryType && styles.completedInput,
           ]}>
-          <Picker
-            selectedValue={salaryType}
-            onValueChange={itemValue => setSalaryType(itemValue)}
-            style={styles.picker}>
-            <Picker.Item label="월급" value="월급" />
-            <Picker.Item label="주급" value="주급" />
-            <Picker.Item label="일급" value="일급" />
-            <Picker.Item label="시급" value="시급" />
-          </Picker>
+          <Dropdown
+            style={styles.dropdown}
+            data={salaryTypeData}
+            labelField="label"
+            valueField="value"
+            placeholder="급여 기준을 선택하세요"
+            value={salaryType}
+            onChange={item => setSalaryType(item.value)}
+            maxHeight={200}
+            flatListProps={{
+              initialNumToRender: 3,
+              maxToRenderPerBatch: 3,
+            }}
+          />
         </View>
 
         {/* 금액 입력 */}
@@ -118,92 +134,50 @@ export default function Info2Screen({navigation}: Props) {
         {/* 출퇴근 시간 선택 */}
         <Text style={styles.label}>출퇴근 시간</Text>
         <View style={styles.timeContainer}>
-          {/* 출근 시간 */}
-          <TouchableOpacity
+          {/* 출근 시간 Dropdown */}
+          <View
             style={[
-              styles.timeButton,
-              startTime && styles.completedInput, // 출근 시간이 선택된 경우 보라색 테두리
-            ]}
-            onPress={() => setStartTimePickerVisible(true)}>
-            <Text style={styles.timeText}>{startTime}</Text>
-          </TouchableOpacity>
+              styles.dropdownContainer,
+              startTime && styles.completedInput,
+            ]}>
+            <Dropdown
+              style={styles.dropdown}
+              data={timeData}
+              labelField="label"
+              valueField="value"
+              placeholder="출근 시간을 선택하세요"
+              value={startTime}
+              onChange={item => setStartTime(item.value)}
+              maxHeight={120}
+              flatListProps={{
+                initialNumToRender: 2,
+                maxToRenderPerBatch: 2,
+              }}
+            />
+          </View>
 
-          {/* 퇴근 시간 */}
-          <TouchableOpacity
+          {/* 퇴근 시간 Dropdown */}
+          <View
             style={[
-              styles.timeButton,
-              endTime && styles.completedInput, // 퇴근 시간이 선택된 경우 보라색 테두리
-            ]}
-            onPress={() => setEndTimePickerVisible(true)}>
-            <Text style={styles.timeText}>{endTime}</Text>
-          </TouchableOpacity>
+              styles.dropdownContainer,
+              endTime && styles.completedInput,
+            ]}>
+            <Dropdown
+              style={styles.dropdown}
+              data={timeData}
+              labelField="label"
+              valueField="value"
+              placeholder="퇴근 시간을 선택하세요"
+              value={endTime}
+              onChange={item => setEndTime(item.value)}
+              maxHeight={120}
+              flatListProps={{
+                initialNumToRender: 2,
+                maxToRenderPerBatch: 2,
+              }}
+            />
+          </View>
         </View>
-
-        {/* 출근 시간 Picker 모달 */}
-        <Modal
-          visible={isStartTimePickerVisible}
-          transparent={true}
-          animationType="slide"
-          onRequestClose={() => setStartTimePickerVisible(false)}>
-          <View style={styles.modalContainer}>
-            <View style={styles.pickerWrapper}>
-              <WheelPicker
-                selectedItem={parseInt(startTime.split(':')[0], 10)}
-                data={Array.from(
-                  {length: 24},
-                  (_, i) => `${i.toString().padStart(2, '0')}:00`,
-                )}
-                onItemSelected={index =>
-                  setStartTime(`${index.toString().padStart(2, '0')}:00`)
-                }
-                itemTextFontFamily="Arial"
-                selectedItemTextFontFamily="Arial-BoldMT"
-                itemTextSize={20}
-                selectedItemTextSize={24}
-                selectedItemTextColor="#98A2FF" // 올바른 색상 형식 사용
-                itemTextColor="#999999" // 선택된 아이템 텍스트 색상
-              />
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setStartTimePickerVisible(false)}>
-                <Text style={styles.closeButtonText}>완료</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
-
-        {/* 퇴근 시간 Picker 모달 */}
-        <Modal
-          visible={isEndTimePickerVisible}
-          transparent={true}
-          animationType="slide"
-          onRequestClose={() => setEndTimePickerVisible(false)}>
-          <View style={styles.modalContainer}>
-            <View style={styles.pickerWrapper}>
-              <WheelPicker
-                selectedItem={parseInt(endTime.split(':')[0], 10)}
-                data={Array.from(
-                  {length: 24},
-                  (_, i) => `${i.toString().padStart(2, '0')}:30`,
-                )}
-                onItemSelected={index =>
-                  setEndTime(`${index.toString().padStart(2, '0')}:30`)
-                }
-                itemTextFontFamily="Arial" // 기본 아이템 폰트 패밀리
-                selectedItemTextFontFamily="Arial-BoldMT" // 선택된 아이템 폰트 패밀리
-                itemTextSize={20} // 아이템 텍스트 크기
-                selectedItemTextSize={24}
-                selectedItemTextColor="#98A2FF" // 올바른 색상 형식 사용
-                itemTextColor="#999999"
-              />
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setEndTimePickerVisible(false)}>
-                <Text style={styles.closeButtonText}>완료</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
       </ScrollView>
 
       {/* 버튼을 하단에 고정 */}
@@ -216,14 +190,9 @@ export default function Info2Screen({navigation}: Props) {
         <TouchableOpacity
           style={styles.nextButton}
           onPress={() =>
-            navigation.navigate('UserInfo3', {
-              salaryType,
-              salary,
-              workDays,
-              startTime,
-              endTime,
-            })
-          }>
+            navigation.navigate('Loading')
+          }
+        >
           <Text style={styles.buttonText}>다음</Text>
         </TouchableOpacity>
       </View>
@@ -238,7 +207,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 20,
-    paddingBottom: 100, 
+    paddingBottom: 100,
     flexGrow: 1,
     justifyContent: 'space-between',
   },
@@ -254,15 +223,6 @@ const styles = StyleSheet.create({
     textAlign: 'left',
     color: '#666',
   },
-  pickerContainer: {
-    borderWidth: 1,
-    borderColor: '#E7E7E7',
-    borderRadius: 8,
-    marginBottom: 30,
-  },
-  picker: {
-    padding: 10,
-  },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -270,7 +230,9 @@ const styles = StyleSheet.create({
     borderColor: '#E7E7E7',
     borderRadius: 8,
     paddingHorizontal: 10,
+    height: 50,
     marginBottom: 30,
+    backgroundColor: '#fff',
   },
   input: {
     flex: 1,
@@ -282,7 +244,7 @@ const styles = StyleSheet.create({
     marginLeft: 5,
   },
   completedInput: {
-    borderColor: '#98A2FF', // 입력 완료된 항목에 보라색 테두리
+    borderColor: '#98A2FF',
   },
   daysContainer: {
     flexDirection: 'row',
@@ -311,8 +273,32 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 20,
   },
+  dropdownContainer: {
+    borderWidth: 1,
+    borderColor: '#E7E7E7',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    height: 50,
+    marginBottom: 30,
+    flex: 1,
+    marginHorizontal: 5,
+    backgroundColor: '#fff',
+  },
+  salaryDropdownContainer: {
+    borderWidth: 1,
+    borderColor: '#E7E7E7',
+    borderRadius: 8,
+    marginBottom: 30,
+    paddingHorizontal: 10,
+    height: 50,
+  },
+  dropdown: {
+    flex: 1,
+    paddingVertical: 0,
+    fontSize: 16,
+  },
   buttonContainer: {
-    position: 'absolute', // 버튼을 하단에 고정
+    position: 'absolute',
     bottom: 10,
     left: 0,
     right: 0,
@@ -342,48 +328,9 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 16,
   },
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  pickerWrapper: {
-    width: '80%',
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 20,
-    alignItems: 'center',
-  },
-  closeButton: {
-    backgroundColor: '#98A2FF',
-    paddingVertical: 10,
-    paddingHorizontal: 30,
-    borderRadius: 24,
-    alignItems: 'center',
-    marginTop: 50,
-  },
-  closeButtonText: {
-    color: '#FFF',
-    fontSize: 16,
-  },
   label: {
     fontSize: 16,
     marginBottom: 8,
   },
-  timeButton: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#98A2FF',
-    borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginHorizontal: 5,
-  },
-  timeText: {
-    fontSize: 16,
-    color: '#98A2FF',
-  },
 });
+
