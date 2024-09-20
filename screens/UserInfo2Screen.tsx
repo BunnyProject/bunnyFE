@@ -182,7 +182,7 @@ export default function Info2Screen({navigation}: Props) {
               flatListProps={{
                 initialNumToRender: 2,
                 maxToRenderPerBatch: 2,
-                initialScrollIndex: timeData.findIndex(item => item.value === startTime), // 현재 선택된 값으로 스크롤
+                initialScrollIndex: timeData.findIndex(item => item.value === endTime), // 현재 선택된 값으로 스크롤
                 // getItemLayout: (_, index) => ({ length: 50, offset: 50 * index, index }), 
               }}
             />
