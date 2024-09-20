@@ -5,6 +5,7 @@ import UserInfoScreen from '../screens/UserInfoScreen';
 import UserInfo2Screen from '../screens/UserInfo2Screen';
 import ResultScreen from '../screens/ResultScreen';
 import LoadingScreen from '../screens/LoadingScreen';
+import HomeScreen from '../screens/HomeScreen';
 
 // Stack navigator 타입 정의
 export type RootStackParamList = {
@@ -20,6 +21,7 @@ export type RootStackParamList = {
   };
   Loading: undefined;
   Result: undefined;
+  Home: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -33,6 +35,7 @@ const MainNavigator: React.FC = () => {
       <Stack.Screen name="UserInfo3" component={UserInfo2Screen} />
       <Stack.Screen name="Loading" component={LoadingScreen} />
       <Stack.Screen name="Result" component={ResultScreen} />
+      <Stack.Screen name="Home" component={HomeScreen} />
     </Stack.Navigator>
   );
 };

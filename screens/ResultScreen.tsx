@@ -58,7 +58,7 @@ const ResultScreen = ({navigation}: Props) => {
         style={styles.button}
         onPress={() => {
           // 다음 페이지 이동 또는 다른 작업 처리
-          navigation.navigate('Loading');
+          navigation.navigate('Home');
         }}
         >
         <Text style={styles.buttonText}>이대로 진행할게요</Text>
