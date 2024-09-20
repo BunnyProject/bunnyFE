@@ -25,6 +25,7 @@ const data = {
 const ResultScreen = ({navigation}: Props) => {
   return (
     <View style={styles.container}>
+      <View style={styles.upper}>
       <Text style={styles.title}>홍길동 님이 벌고 계시는 급여입니다.</Text>
       <View style={styles.card}>
         <View style={styles.row}>
@@ -52,6 +53,7 @@ const ResultScreen = ({navigation}: Props) => {
           <Text style={styles.value}>{data.perSecond}</Text>
         </View>
       </View>
+      </View>
       <TouchableOpacity
         style={styles.button}
         onPress={() => {
@@ -68,10 +70,16 @@ const ResultScreen = ({navigation}: Props) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#fff',
-    padding: 20,
+    padding: 30,
+  },
+  upper: {
+    flex: 1,
+    alignItems: 'center',
+    width: '100%',
+    gap: 10,
   },
   title: {
     fontSize: 18,
@@ -81,9 +89,9 @@ const styles = StyleSheet.create({
   },
   card: {
     width: '90%',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#ffffff',
     borderRadius: 10,
-    padding: 20,
+    padding: 30,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.2,
@@ -93,7 +101,7 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 15,
+    marginBottom: 20,
   },
   label: {
     fontSize: 16,
@@ -104,11 +112,11 @@ const styles = StyleSheet.create({
     color: '#8c9eff',
   },
   button: {
-    marginTop: 30,
+    marginBottom: 30,
     backgroundColor: '#8c9eff',
-    borderRadius: 20,
     paddingVertical: 15,
-    paddingHorizontal: 50,
+    borderRadius: 24,
+    paddingHorizontal: 100,
   },
   buttonText: {
     color: '#fff',
