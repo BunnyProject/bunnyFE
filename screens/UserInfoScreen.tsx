@@ -44,6 +44,19 @@ const UserInfoScreen: React.FC<Props> = ({navigation}) => {
     return regex.test(date);
   };
 
+  // 생년월일 포맷팅 함수
+  const formatBirthDate = (date: string) => {
+    // 숫자만 입력 받기
+    const numericDate = date.replace(/[^0-9]/g, '');
+    if (numericDate.length <= 4) {
+      return numericDate; // 4자리 이하일 경우 그대로 반환
+    }
+    if (numericDate.length <= 6) {
+      return `${numericDate.slice(0, 4)}/${numericDate.slice(4, 6)}`;
+    }
+    return `${numericDate.slice(0, 4)}/${numericDate.slice(4, 6)}/${numericDate.slice(6, 8)}`;
+  };
+
   // 입력 유효성 검사
   const validateForm = () => {
     if (name.length > 0 && isBirthDateValid(birthDate) && gender && job) {
@@ -75,6 +88,8 @@ const UserInfoScreen: React.FC<Props> = ({navigation}) => {
           placeholder="이름"
           value={name}
           onChangeText={setName}
+          keyboardType="default" // 기본 키보드 타입
+          maxLength={10} // 최대 글자수 제한 (원하는대로 수정 가능)
         />
 
         <View style={styles.labelContainer}>
@@ -88,7 +103,9 @@ const UserInfoScreen: React.FC<Props> = ({navigation}) => {
           ]}
           placeholder="생년월일 (YYYY/MM/DD)"
           value={birthDate}
-          onChangeText={setBirthDate}
+          onChangeText={(text) => setBirthDate(formatBirthDate(text))}
+          keyboardType="number-pad" // 숫자 입력만 가능하도록 설정
+          maxLength={10} // YYYY/MM/DD로 10자까지만 입력 허용
         />
 
         <View style={styles.labelContainer}>
@@ -148,6 +165,9 @@ const UserInfoScreen: React.FC<Props> = ({navigation}) => {
           }}
           selectedTextStyle={{
             color: job ? '#98A2FF' : '#000', // 직업이 선택되었을 때 텍스트 색상 변경
+          }}
+          containerStyle={{
+            marginTop: -50, // 드롭다운과 필드 사이의 간격을 줄임
           }}
         />
       </ScrollView>

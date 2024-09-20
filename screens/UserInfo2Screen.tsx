@@ -88,6 +88,9 @@ export default function Info2Screen({navigation}: Props) {
               initialNumToRender: 3,
               maxToRenderPerBatch: 3,
             }}
+            containerStyle={{
+              marginTop: -50, // 드롭다운과 필드 사이의 간격을 줄임
+            }}
           />
         </View>
 
@@ -148,11 +151,16 @@ export default function Info2Screen({navigation}: Props) {
               placeholder="출근 시간을 선택하세요"
               value={startTime}
               onChange={item => setStartTime(item.value)}
-              maxHeight={120}
+              maxHeight={100}
               flatListProps={{
                 initialNumToRender: 2,
                 maxToRenderPerBatch: 2,
+                initialScrollIndex: timeData.findIndex(item => item.value === startTime), // 현재 선택된 값으로 스크롤
+                // getItemLayout: (_, index) => ({ length: 50, offset: 50 * index, index }), 
               }}
+              // containerStyle={{
+              //   marginTop: 1, // 드롭다운과 필드 사이의 간격을 줄임
+              // }}
             />
           </View>
 
@@ -170,10 +178,12 @@ export default function Info2Screen({navigation}: Props) {
               placeholder="퇴근 시간을 선택하세요"
               value={endTime}
               onChange={item => setEndTime(item.value)}
-              maxHeight={120}
+              maxHeight={100}
               flatListProps={{
                 initialNumToRender: 2,
                 maxToRenderPerBatch: 2,
+                initialScrollIndex: timeData.findIndex(item => item.value === startTime), // 현재 선택된 값으로 스크롤
+                // getItemLayout: (_, index) => ({ length: 50, offset: 50 * index, index }), 
               }}
             />
           </View>
