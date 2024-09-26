@@ -3,7 +3,7 @@ import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
 import * as Progress from 'react-native-progress';
 import moment from 'moment-timezone';
 import Svg, {Defs, LinearGradient, Stop, Rect, Circle} from 'react-native-svg';
-import Icon from 'react-native-vector-icons/FontAwesome'; // 라이브러리에서 FontAwesome 아이콘 사용
+import Icon from 'react-native-vector-icons/FontAwesome';
 
 export default function HomeScreen() {
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -13,14 +13,14 @@ export default function HomeScreen() {
   const startTime = useMemo(() => {
     return moment
       .tz('Asia/Seoul')
-      .set({hour: 9, minute: 0, second: 0})
+      .set({hour: 18, minute: 22, second: 0})
       .toDate();
   }, []);
 
   const endTime = useMemo(() => {
     return moment
       .tz('Asia/Seoul')
-      .set({hour: 17, minute: 0, second: 0})
+      .set({hour: 20, minute: 0, second: 0})
       .toDate();
   }, []);
 
@@ -62,16 +62,23 @@ export default function HomeScreen() {
 
   const currentDate = moment().tz('Asia/Seoul');
   const currentDayOfMonth = moment().tz('Asia/Seoul').date();
-  const totalDaysInMonth = moment().tz('Asia/Seoul').daysInMonth();
+  // const totalDaysInMonth = moment().tz('Asia/Seoul').daysInMonth();
   const month = currentDate.month() + 1;
   const dayOfWeekStr = currentDate.format('dddd');
 
+  // 시간을 시:분:초 형식으로 포맷팅하는 함수
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
-    const remainingSeconds = seconds % 60;
+    // remainingSeconds 값이 소수점이 나오지 않도록 Math.floor 적용
+    const remainingSeconds = Math.floor(seconds % 60);
     return `${hours}시간 ${minutes}분 ${remainingSeconds}초`;
   };
+
+  // 퇴근 후 경과 시간도 정상적으로 8시간 0분 0초로 표시되도록 조건 추가
+  const formattedElapsedTime = elapsedTime >= 8 * 3600 ? formatTime(8 * 3600) : formatTime(elapsedTime);
+  const formattedTimeLeft = timeLeft <= 0 ? formatTime(0) : formatTime(timeLeft);
+  
   const progress =
     elapsedTime / ((endTime.getTime() - startTime.getTime()) / 1000);
 
@@ -116,9 +123,9 @@ export default function HomeScreen() {
           />
         </Svg>
         <View style={styles.progressTextContainer}>
-          <Text style={styles.progressText}>{formatTime(elapsedTime)}</Text>
+          <Text style={styles.progressText}>{formattedElapsedTime}</Text>
           <Text style={styles.progressSubText}>
-            퇴근까지 {'\n'} {formatTime(timeLeft)}
+            퇴근까지 {'\n'} {formattedTimeLeft}
           </Text>
         </View>
         <View style={styles.earnings}>
@@ -189,17 +196,19 @@ const styles = StyleSheet.create({
   headerContainer: {
     flexDirection: 'row',
     alignContent: 'center',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 10,
   },
   header: {
     fontSize: 18,
     fontWeight: 'bold',
     color: 'black',
+    marginBottom: 10,
   },
   today: {
     fontSize: 14,
     color: 'black',
+    marginBottom: 10,
   },
   circleContainer: {
     justifyContent: 'center',
