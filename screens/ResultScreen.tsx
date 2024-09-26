@@ -74,12 +74,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#fff',
     padding: 30,
+    marginTop: 30
   },
   upper: {
     flex: 1,
     alignItems: 'center',
     width: '100%',
-    gap: 10,
+    gap: 20,
   },
   title: {
     fontSize: 18,
