@@ -1,11 +1,14 @@
-import React, {useState, useEffect, useMemo} from 'react';
-import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
-// import * as Progress from 'react-native-progress';
+import React, { useState, useEffect, useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import moment from 'moment-timezone';
-import Svg, {Defs, LinearGradient, Stop, Rect, Circle} from 'react-native-svg';
-import Icon from 'react-native-vector-icons/FontAwesome';
+import Svg, { Defs, LinearGradient, Stop, Circle } from 'react-native-svg';
+import CustomSlider from '../components/Slider';
 
-export default function HomeScreen() {
+export default function BunnyScreen() {
+  const totalWeeklyEarnings = 600000; // 이번 주 총 수익 금액
+  const totalMonthlyEarnings = 2400000; // 이번 달 총 수익 금액
+  const totalYearlyEarnings = 28800000; // 올해 총 수익 금액
+
   const [elapsedTime, setElapsedTime] = useState(0);
   const [earnings, setEarnings] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
@@ -13,21 +16,20 @@ export default function HomeScreen() {
   const startTime = useMemo(() => {
     return moment
       .tz('Asia/Seoul')
-      .set({hour: 18, minute: 22, second: 0})
+      .set({ hour: 9, minute: 0, second: 0 })
       .toDate();
   }, []);
 
   const endTime = useMemo(() => {
     return moment
       .tz('Asia/Seoul')
-      .set({hour: 20, minute: 0, second: 0})
+      .set({ hour: 17, minute: 0, second: 0 })
       .toDate();
   }, []);
 
-  const ratePerMinute = 50;
-
-  const monthlyGoal = 250000;
-  const todayEarnings = 68000;
+  const ratePerMinute = 280; // 분당 금액
+  const ratePerSecond = ratePerMinute / 60; // 초당 금액
+  const ratePerHour = ratePerMinute * 60; // 시간당 금액
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -41,17 +43,17 @@ export default function HomeScreen() {
         setTimeLeft((endTime.getTime() - startTime.getTime()) / 1000);
       } else {
         const elapsedSeconds = Math.floor(
-          (now.getTime() - startTime.getTime()) / 1000,
+          (now.getTime() - startTime.getTime()) / 1000
         );
         setElapsedTime(elapsedSeconds);
 
         const currentEarnings = Math.floor(
-          (elapsedSeconds / 60) * ratePerMinute,
+          (elapsedSeconds / 60) * ratePerMinute
         );
         setEarnings(currentEarnings);
 
         const remainingSeconds = Math.floor(
-          (endTime.getTime() - now.getTime()) / 1000,
+          (endTime.getTime() - now.getTime()) / 1000
         );
         setTimeLeft(remainingSeconds);
       }
@@ -64,26 +66,26 @@ export default function HomeScreen() {
   const currentDayOfMonth = moment().tz('Asia/Seoul').date();
   // const totalDaysInMonth = moment().tz('Asia/Seoul').daysInMonth();
   const month = currentDate.month() + 1;
+  const currentDayOfWeek = currentDate.isoWeekday() - 1; 
   const dayOfWeekStr = currentDate.format('dddd');
 
-  // 시간을 시:분:초 형식으로 포맷팅하는 함수
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
-    // remainingSeconds 값이 소수점이 나오지 않도록 Math.floor 적용
     const remainingSeconds = Math.floor(seconds % 60);
     return `${hours}시간 ${minutes}분 ${remainingSeconds}초`;
   };
 
-  // 퇴근 후 경과 시간도 정상적으로 8시간 0분 0초로 표시되도록 조건 추가
-  const formattedElapsedTime = elapsedTime >= 8 * 3600 ? formatTime(8 * 3600) : formatTime(elapsedTime);
-  const formattedTimeLeft = timeLeft <= 0 ? formatTime(0) : formatTime(timeLeft);
-  
+  const formattedElapsedTime =
+    elapsedTime >= 8 * 3600 ? formatTime(8 * 3600) : formatTime(elapsedTime);
+  const formattedTimeLeft =
+    timeLeft <= 0 ? formatTime(0) : formatTime(timeLeft);
+
   const progress =
     elapsedTime / ((endTime.getTime() - startTime.getTime()) / 1000);
 
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.scrollContainer}>
       <View style={styles.headerContainer}>
         <Text style={styles.header}>오늘의 버니</Text>
         <Text style={styles.today}>
@@ -95,7 +97,8 @@ export default function HomeScreen() {
           width={200}
           height={200}
           viewBox="0 0 200 200"
-          style={{transform: [{rotate: '-90deg'}]}}>
+          style={{ transform: [{ rotate: '-90deg' }] }}
+        >
           <Defs>
             <LinearGradient id="grad" x1="0" y1="0" x2="1" y2="0">
               <Stop offset="0%" stopColor="#DECDFF" />
@@ -131,84 +134,92 @@ export default function HomeScreen() {
         <View style={styles.earnings}>
           <Text style={styles.earningsText}>{earnings.toLocaleString()}원</Text>
         </View>
-      </View>
-
-      {/* 이달의 목표 금액 및 진행 바 */}
-      <Text style={styles.header}>이달의 아끼기 목표</Text>
-      <View style={styles.monthlyGoalContainer}>
-        <View style={styles.goalTextContainer}>
-            <Text style={styles.currentGoal}>
-              {todayEarnings.toLocaleString()}원
-            </Text>
-          <View style={styles.goalTextWrapper}>
-
-            <Text style={styles.totalGoal}>
-              {monthlyGoal.toLocaleString()}원
-            </Text>
-          <TouchableOpacity style={styles.iconButton}>
-            <Icon name="pencil" size={15} color="#4f4f4f" />
-          </TouchableOpacity>
-          </View>
-
-        </View>
-
-        <View style={styles.progressBarContainer}>
-          {/* 채워지지 않은 막대 그래프 (배경) */}
-          <Svg height="20" width="100%">
-            <Defs>
-              <LinearGradient id="gradBar" x1="0" y1="0" x2="1" y2="0">
-                <Stop offset="0%" stopColor="#DECDFF" />
-                <Stop offset="100%" stopColor="#BCECFF" />
-              </LinearGradient>
-            </Defs>
-            <Rect
-              x="0"
-              y="0"
-              width="100%" // 전체 바의 넓이
-              height="20"
-              fill="#f4f4f4" // 채워지지 않은 부분 색상
-              rx="0" // 전체 배경은 직각으로 설정
-              ry="0"
-            />
-            {/* 채워진 막대 그래프 */}
-            <Rect
-              x="0"
-              y="0"
-              width={`${(todayEarnings / monthlyGoal) * 100}%`} // 진행률에 따라 넓이 설정
-              height="20"
-              fill="url(#gradBar)"
-              rx="10" // 채워진 부분만 모서리를 둥글게 설정
-              ry="10"
-            />
-          </Svg>
+        <View style={styles.bottoms}>
+          {['초당', '분당', '시간당'].map((label, index) => (
+            <View
+              style={[
+                styles.bottomItems,
+                index < 2 && styles.bottomBorder,
+              ]}
+              key={index}
+            >
+              <Text style={styles.bottomlabel}>{label}</Text>
+              <Text style={styles.bottomItem}>
+                {index === 0
+                  ? ratePerSecond.toLocaleString()
+                  : index === 1
+                  ? ratePerMinute.toLocaleString()
+                  : ratePerHour.toLocaleString()}
+                원
+              </Text>
+            </View>
+          ))}
         </View>
       </View>
-    </View>
+      <View style={styles.sliderContainer}>
+        <View style={styles.headerContainer}>
+          <Text style={styles.header}>이 주의 버니</Text>
+          <Text style={styles.today}>{dayOfWeekStr}</Text>
+        </View>
+        <CustomSlider
+        totalGoal={totalWeeklyEarnings}
+        unit="week"
+        startLabel="월요일"
+        endLabel="금요일"
+        step={4} // 월요일부터 금요일까지 5단계
+        defaultValue={currentDayOfWeek > 4 ? 4 : currentDayOfWeek} // 주말이면 금요일로 설정
+      />
+
+        <View style={styles.headerContainer}>
+          <Text style={styles.header}>이 달의 버니</Text>
+          <Text style={styles.today}>{currentDayOfMonth}일</Text>
+        </View>
+        <CustomSlider
+        totalGoal={totalMonthlyEarnings}
+        unit="month"
+        startLabel="1일"
+        endLabel={`${currentDate.daysInMonth()}일`}
+        step={currentDate.daysInMonth() - 1} // 한 달의 일수만큼 단계 설정
+        defaultValue={currentDayOfMonth} // 현재 날짜에 해당하는 단계로 설정
+      />
+
+        <View style={styles.headerContainer}>
+          <Text style={styles.header}>올해의 버니</Text>
+          <Text style={styles.today}>{month}월</Text>
+        </View>
+        <CustomSlider
+        totalGoal={totalYearlyEarnings}
+        unit="year"
+        startLabel="1월"
+        endLabel="12월"
+        step={11} // 1월부터 12월까지 12단계
+        defaultValue={month} // 현재 월에 해당하는 단계로 설정
+      />
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  scrollContainer: {
     padding: 20,
     backgroundColor: '#fff',
+    flexGrow: 1,
   },
   headerContainer: {
     flexDirection: 'row',
     alignContent: 'center',
-    alignItems: 'center',
-    gap: 10,
+    alignItems: 'flex-end',
+    marginBottom: 10,
   },
   header: {
     fontSize: 18,
     fontWeight: 'bold',
     color: 'black',
-    marginBottom: 10,
   },
   today: {
     fontSize: 14,
-    color: 'black',
-    marginBottom: 10,
+    color: '#aaa',
   },
   circleContainer: {
     justifyContent: 'center',
@@ -218,21 +229,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#fcfcfc',
     padding: 30,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 5,
-  },
-  circleGradient: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 100,
-    padding: 15,
-  },
-  circleText: {
-    fontSize: 16,
-    color: '#000000',
-    marginTop: 5,
   },
   earnings: {
     margin: 20,
@@ -247,9 +247,36 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
   },
+  bottomBorder: {
+    borderRightWidth: 2,
+    borderColor: '#ffffff',
+  },
+  bottoms: {
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexDirection: 'row',
+    borderRadius: 24,
+    backgroundColor: '#F6F6F6',
+    paddingVertical: 17,
+  },
+  bottomItems: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    paddingRight: 30,
+    paddingLeft: 30,
+  },
+  bottomlabel: {
+    fontSize: 14,
+    color: '#4f4f4f',
+  },
+  bottomItem: {
+    fontSize: 14,
+    color: '#000000',
+    fontWeight: 'bold',
+  },
   progressTextContainer: {
     position: 'absolute',
-    top: '40%',
+    top: '30%',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -265,43 +292,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 5,
   },
-  monthlyGoalContainer: {
+  sliderContainer: {
     marginBottom: 40,
-    borderRadius: 15,
-    backgroundColor: '#fcfcfc',
-    padding: 30,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  goalTextContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  goalTextWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  currentGoal: {
-    fontSize: 16,
-    color: '#98A2FF',
-    marginRight: 10, // currentGoal과 totalGoal 사이에 간격 추가
-  },
-  totalGoal: {
-    fontSize: 16,
-    color: '#000000',
-  },
-  iconButton: {
-    marginLeft: 10, // totalGoal과 아이콘 사이에 간격 추가
-  },
-  progressBarContainer: {
-    position: 'relative',
-    height: 20,
-    marginBottom: 10,
-    borderRadius: 10,
-    overflow: 'hidden',
   },
 });
