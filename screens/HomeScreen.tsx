@@ -1,6 +1,6 @@
 import React, {useState, useEffect, useMemo} from 'react';
 import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
-import * as Progress from 'react-native-progress';
+// import * as Progress from 'react-native-progress';
 import moment from 'moment-timezone';
 import Svg, {Defs, LinearGradient, Stop, Rect, Circle} from 'react-native-svg';
 import Icon from 'react-native-vector-icons/FontAwesome';

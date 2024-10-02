@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
 import Slider from '@react-native-community/slider';
 import LinearGradient from 'react-native-linear-gradient';
 
@@ -15,7 +15,6 @@ interface CustomSliderProps {
 
 export default function CustomSlider({
   totalGoal,
-  unit,
   startLabel,
   endLabel,
   step,
