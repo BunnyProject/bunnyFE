@@ -10,6 +10,7 @@ import LoadingScreen from '../screens/LoadingScreen';
 import HomeScreen from '../screens/HomeScreen';
 import Header from '../components/Header';
 import BunnyScreen from '../screens/BunnyScreen';
+import AkkiScreen from '../screens/AkkiScreen';
 
 // 이미지 경로 불러오기
 const bunnyIcon = require('../assets/bunny.png');
@@ -31,6 +32,7 @@ export type RootStackParamList = {
   Result: undefined;
   Home: undefined;
   Bunny: undefined;
+  Akki: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -83,7 +85,7 @@ const HomeTabNavigator = () => {
       <Tab.Screen name="Home" component={HomeScreen} options={{title: '홈'}} />
       <Tab.Screen
         name="Saving"
-        component={HomeScreen}
+        component={AkkiScreen}
         options={{title: '아끼기'}}
       />
     </Tab.Navigator>
