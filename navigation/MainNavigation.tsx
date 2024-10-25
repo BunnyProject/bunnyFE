@@ -11,6 +11,7 @@ import HomeScreen from '../screens/HomeScreen';
 import Header from '../components/Header';
 import BunnyScreen from '../screens/BunnyScreen';
 import AkkiScreen from '../screens/AkkiScreen';
+import IconSelectScreen from '../screens/IconSelectScreen';
 
 // 이미지 경로 불러오기
 const bunnyIcon = require('../assets/bunny.png');
@@ -33,6 +34,7 @@ export type RootStackParamList = {
   Home: undefined;
   Bunny: undefined;
   Akki: undefined;
+  IconSelectScreen: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -85,7 +87,7 @@ const HomeTabNavigator = () => {
       <Tab.Screen name="Home" component={HomeScreen} options={{title: '홈'}} />
       <Tab.Screen
         name="Saving"
-        component={AkkiScreen}
+        component={IconSelectScreen}
         options={{title: '아끼기'}}
       />
     </Tab.Navigator>
@@ -140,6 +142,17 @@ const MainNavigator: React.FC = () => {
           header: () => <Header />,
           headerTitle: '', // 제목을 빈 문자열로 설정
         }}
+      />
+      <Stack.Screen
+        name="IconSelectScreen"
+        component={IconSelectScreen} // Icon 대신 IconSelectScreen 사용
+        options={{title: '아이콘 선택'}}
+      />
+
+      <Stack.Screen
+        name="Akki"
+        component={AkkiScreen}
+        options={{title: '아끼'}}
       />
     </Stack.Navigator>
   );
