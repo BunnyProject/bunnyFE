@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import {useRoute, RouteProp} from '@react-navigation/native';
 import CalendarComponent from '../components/CalendarComponent';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 type RootStackParamList = {
   AkkiScreen: {
@@ -29,6 +30,91 @@ const AkkiScreen = () => {
     source: any;
   } | null>(null);
   const [inputAmount, setInputAmount] = useState('');
+
+  const testData = [
+    {
+      name: '술',
+      amount: 4500,
+      time: '2024-10-01T09:30:00',
+      id: '1',
+      source: selectedIcons.find(icon => icon.name === '술')?.source,
+    },
+    {
+      name: '술',
+      amount: 800,
+      time: '2024-10-01T11:00:00',
+      id: '2',
+      source: selectedIcons.find(icon => icon.name === '술')?.source,
+    },
+    {
+      name: '쇼핑',
+      amount: 25000,
+      time: '2024-10-01T14:00:00',
+      id: '3',
+      source: selectedIcons.find(icon => icon.name === '쇼핑')?.source,
+    },
+    {
+      name: '기타',
+      amount: 2000,
+      time: '2024-10-01T16:30:00',
+      id: '4',
+      source: require('../assets/icons/plus.png'),
+    },  {
+      name: '술',
+      amount: 4500,
+      time: '2024-10-01T09:30:00',
+      id: '5',
+      source: selectedIcons.find(icon => icon.name === '술')?.source,
+    },
+    {
+      name: '술',
+      amount: 800,
+      time: '2024-10-01T11:00:00',
+      id: '6',
+      source: selectedIcons.find(icon => icon.name === '술')?.source,
+    },
+    {
+      name: '쇼핑',
+      amount: 25000,
+      time: '2024-10-01T14:00:00',
+      id: '7',
+      source: selectedIcons.find(icon => icon.name === '쇼핑')?.source,
+    },
+    {
+      name: '기타',
+      amount: 2000,
+      time: '2024-10-01T16:30:00',
+      id: '8',
+      source: require('../assets/icons/plus.png'),
+    },  {
+      name: '술',
+      amount: 4500,
+      time: '2024-10-01T09:30:00',
+      id: '9',
+      source: selectedIcons.find(icon => icon.name === '술')?.source,
+    },
+    {
+      name: '술',
+      amount: 800,
+      time: '2024-10-01T11:00:00',
+      id: '10',
+      source: selectedIcons.find(icon => icon.name === '술')?.source,
+    },
+    {
+      name: '쇼핑',
+      amount: 25000,
+      time: '2024-10-01T14:00:00',
+      id: '11',
+      source: selectedIcons.find(icon => icon.name === '쇼핑')?.source,
+    },
+    {
+      name: '기타',
+      amount: 2000,
+      time: '2024-10-01T16:30:00',
+      id: '12',
+      source: require('../assets/icons/plus.png'),
+    },
+  ];
 
   // 전 페이지에서 선택된 두 카테고리에 기반한 초기 상태 설정
   const initialSavings = selectedIcons.reduce(
@@ -171,7 +257,11 @@ const AkkiScreen = () => {
       </Modal>
       {/* 캘린더 컴포넌트 사용 */}
       <View style={styles.calendarSection}>
-        <CalendarComponent onSelectDate={handleSelectDate} />
+        <CalendarComponent
+          onSelectDate={handleSelectDate}
+          // selectedCategories={savings[selectedDate] || []}
+          selectedCategories={testData}
+        />
         {/* 월별 총 아끼기 금액 */}
         <View style={styles.monthlyTotalSection}>
           <Text style={styles.monthlyTotalTitle}>이번 달 아끼기 누적액</Text>

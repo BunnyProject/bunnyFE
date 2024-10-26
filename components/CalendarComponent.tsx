@@ -1,17 +1,35 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Button } from 'react-native';
-import { Calendar } from 'react-native-calendars';
+import React, {useState} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  FlatList,
+  Image,
+  ScrollView,
+} from 'react-native';
+import {Calendar} from 'react-native-calendars';
 import Modal from 'react-native-modal';
-import { format, isValid } from 'date-fns';
+import {format, isValid} from 'date-fns';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 type CalendarComponentProps = {
-  onSelectDate: (date: string) => void; // 부모에게 선택된 날짜를 전달하는 콜백
+  selectedCategories: {
+    name: string;
+    source: any;
+    amount: number;
+    time: string;
+    id: string;
+  }[];
+  onSelectDate: (date: string) => void;
 };
 
-const CalendarComponent: React.FC<CalendarComponentProps> = ({ onSelectDate }) => {
+const CalendarComponent: React.FC<CalendarComponentProps> = ({
+  selectedCategories,
+  onSelectDate,
+}) => {
   const [isModalVisible, setModalVisible] = useState(false);
   const [selectedDate, setSelectedDate] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<any[]>([]);
 
   const toggleModal = () => {
     setModalVisible(!isModalVisible);
@@ -19,21 +37,35 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({ onSelectDate }) =
 
   const onDayPress = (day: any) => {
     setSelectedDate(day.dateString);
-    setSelectedCategory([
-      { name: '커피', amount: 4500 },
-      { name: '담배', amount: 800 },
-      { name: '쇼핑', amount: 25000 },
-    ]);
     toggleModal();
-    onSelectDate(day.dateString); // 선택된 날짜를 부모에게 전달
+    onSelectDate(day.dateString);
   };
+
+  // 카테고리별 총 금액 계산
+  const getCategoryTotals = () => {
+    const categoryMap: {[key: string]: number} = {};
+    selectedCategories.forEach(item => {
+      if (categoryMap[item.name]) {
+        categoryMap[item.name] += item.amount;
+      } else {
+        categoryMap[item.name] = item.amount;
+      }
+    });
+    return categoryMap;
+  };
+
+  const categoryTotals = getCategoryTotals();
 
   return (
     <View>
       <Calendar
         onDayPress={onDayPress}
         markedDates={{
-          [selectedDate]: { selected: true, marked: true, selectedColor: '#98A2FF' },
+          [selectedDate]: {
+            selected: true,
+            marked: true,
+            selectedColor: '#98A2FF',
+          },
         }}
         theme={{
           selectedDayBackgroundColor: '#98A2FF',
@@ -43,26 +75,91 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({ onSelectDate }) =
       />
 
       {/* 모달 팝업 */}
-      <Modal isVisible={isModalVisible} onBackdropPress={toggleModal}>
+      <Modal
+        isVisible={isModalVisible}
+        onBackdropPress={toggleModal}
+        style={styles.modal}>
         <View style={styles.modalContent}>
-          {/* 날짜가 유효할 경우에만 포맷팅 */}
-          {isValid(new Date(selectedDate)) ? (
-            <Text style={styles.modalTitle}>
-              {format(new Date(selectedDate), 'yyyy년 MM월 dd일')}
-            </Text>
-          ) : (
-            <Text style={styles.modalTitle}>Invalid Date</Text>
-          )}
-          <Text style={styles.modalTotal}>
-            총 {selectedCategory.reduce((sum, item) => sum + item.amount, 0)}원
-          </Text>
-          {selectedCategory.map((item, index) => (
-            <View key={index} style={styles.categoryRow}>
-              <Text>{item.name}</Text>
-              <Text>{item.amount}원</Text>
+          <ScrollView contentContainerStyle={styles.scrollContainer}>
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={toggleModal}>
+                <Ionicons name="close" size={24} color="#FF7B7B" />
+              </TouchableOpacity>
             </View>
-          ))}
-          <Button title="닫기" onPress={toggleModal} />
+              {isValid(new Date(selectedDate)) ? (
+                <View>
+                  <Text style={styles.modalTitle}>
+                    {format(new Date(selectedDate), 'MM월 dd일')}
+                  </Text>
+                  <View style={styles.topRow}>
+                    <View style={styles.topText}>
+                      <Text style={styles.modalSubTitle}>
+                        {format(new Date(selectedDate), 'yyyy년 MM월 dd일')}
+                      </Text>
+                      <Text style={styles.modalTotal}>
+                        총{' '}
+                        {selectedCategories
+                          .reduce((sum, item) => sum + item.amount, 0)
+                          .toLocaleString()}
+                        원
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => console.log('항목 추가 버튼 클릭')}
+                      style={styles.addButtonContainer}>
+                      <View style={styles.addButtonContent}>
+                        <Ionicons name="add" size={20} color="#98A2FF" />
+                        <Text style={styles.buttonText}>항목추가</Text>
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ) : (
+                <Text style={styles.modalTitle}>유효하지 않은 날짜</Text>
+              )}
+              {/* 카테고리별 총 금액 표시 */}
+              <View style={styles.categorySummary}>
+                {Object.keys(categoryTotals).map((category, index) => {
+                  const icon = selectedCategories.find(
+                    item => item.name === category,
+                  )?.source;
+                  return (
+                    <View key={index} style={styles.categoryRow}>
+                      {icon && <Image source={icon} style={styles.iconImage} />}
+                      <View style={styles.categoryDetail}>
+                        <Text style={styles.categoryText}>{category}</Text>
+                        <Text style={styles.categoryAmount}>
+                          {categoryTotals[category].toLocaleString()}원
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            {/* 시간 순으로 정렬된 세부 내역 */}
+            <FlatList
+              data={selectedCategories.sort(
+                (a, b) =>
+                  new Date(a.time).getTime() - new Date(b.time).getTime(),
+              )}
+              keyExtractor={item => item.id}
+              renderItem={({item}) => (
+                <View style={styles.detailRow}>
+                  <View style={styles.detailText}>
+                    {/* <Image source={item.source} style={styles.iconImage} /> */}
+                    <Text style={styles.iconText}>{item.name}</Text>
+                    <Text style={styles.amountText}>
+                      {item.amount.toLocaleString()}원
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => console.log('삭제 버튼 클릭')}>
+                    <Ionicons name="trash-outline" size={20} />
+                  </TouchableOpacity>
+                </View>
+              )}
+            />
+          </ScrollView>
         </View>
       </Modal>
     </View>
@@ -70,24 +167,108 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({ onSelectDate }) =
 };
 
 const styles = StyleSheet.create({
+  modal: {
+    justifyContent: 'center',
+    marginHorizontal: 20,
+  },
   modalContent: {
     backgroundColor: '#FFFFFF',
-    padding: 20,
+    height: '70%',
     borderRadius: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    overflow: 'hidden',
+  },
+  scrollContainer: {
+    paddingBottom: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 25,
+    color: '#000000',
+    textAlign: 'center',
+  },
+  modalSubTitle: {
+    fontSize: 12,
+    color: '#000000',
+  },
+  topText: {
+    alignItems: 'flex-start',
+  },
+  topRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  addButtonContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 10,
+  },
+  addButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  buttonText: {
+    fontSize: 16,
+    marginLeft: 5,
+    color: '#98A2FF',
   },
   modalTotal: {
     fontSize: 16,
     marginBottom: 10,
+    color: '#000000',
+  },
+  categorySummary: {
+    marginVertical: 15,
   },
   categoryRow: {
     flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 10,
+    gap: 10,
+  },
+  iconImage: {
+    width: 35,
+    height: 35,
+    marginRight: 10,
+    resizeMode: 'contain',
+  },
+  categoryDetail: {
+    flexDirection: 'column',
+  },
+  categoryText: {
+    fontSize: 16,
+  },
+  categoryAmount: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 'auto',
+    color: '#000000',
+  },
+  detailRow: {
+    flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     marginVertical: 5,
+  },
+  detailText: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  iconText: {
+    fontSize: 14,
+    marginLeft: 10,
+  },
+  amountText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginLeft: 'auto',
   },
 });
 
