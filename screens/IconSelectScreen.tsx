@@ -3,9 +3,11 @@ import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
 const IconSelectScreen = () => {
-  const [selectedIcons, setSelectedIcons] = useState<{ name: string; source: any }[]>([]);
   const navigation = useNavigation();
+  const FIRST_COLOR = '#98A2FF'; // First selected category color
+  const SECOND_COLOR = '#ACD7FF'; // Second selected category color
 
+  // Icons data with default colors for unselected icons
   const icons = [
     { name: '커피', source: require('../assets/icons/coffee.png') },
     { name: '담배', source: require('../assets/icons/smoke.png') },
@@ -21,41 +23,52 @@ const IconSelectScreen = () => {
     { name: '구독료', source: require('../assets/icons/subscribe.png') },
   ];
 
+  const [selectedIcons, setSelectedIcons] = useState<{ name: string; source: any; color: string }[]>([]);
+
   const toggleIconSelection = (icon: { name: string; source: any }) => {
     if (selectedIcons.some((selected) => selected.name === icon.name)) {
-      setSelectedIcons(selectedIcons.filter((item) => item.name !== icon.name)); // 선택 해제
+      // Deselect the icon
+      setSelectedIcons(selectedIcons.filter((item) => item.name !== icon.name));
     } else if (selectedIcons.length < 2) {
-      setSelectedIcons([...selectedIcons, icon]); // 최대 2개까지 선택 가능
+      // Add the icon with color based on selection order
+      const color = selectedIcons.length === 0 ? FIRST_COLOR : SECOND_COLOR;
+      setSelectedIcons([...selectedIcons, { ...icon, color }]);
     }
   };
 
   const onConfirmSelection = () => {
-    navigation.navigate('Akki', { selectedIcons }); // 선택된 아이콘을 아끼 화면에 전달
+    navigation.navigate('Akki', { selectedIcons });
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>아끼고 싶은 항목을 2개 설정해주세요</Text>
       <View style={styles.iconGrid}>
-        {icons.map((icon) => (
-          <View key={icon.name} style={styles.iconWrapper}>
-            <TouchableOpacity
-              onPress={() => toggleIconSelection(icon)}
-              style={[
-                styles.iconContainer,
-                selectedIcons.some((selected) => selected.name === icon.name) && styles.selectedIcon,
-              ]}
-            >
-              <Image source={icon.source} style={styles.iconImage} resizeMode="contain" />
-            </TouchableOpacity>
-            <Text style={styles.iconText}>{icon.name}</Text>
-          </View>
-        ))}
+        {icons.map((icon) => {
+          const isSelected = selectedIcons.some((selected) => selected.name === icon.name);
+          const selectedIcon = selectedIcons.find((selected) => selected.name === icon.name);
+          const borderColor = selectedIcon ? selectedIcon.color : '#f2f2f2'; // Use color if selected, default otherwise
+
+          return (
+            <View key={icon.name} style={styles.iconWrapper}>
+              <TouchableOpacity
+                onPress={() => toggleIconSelection(icon)}
+                style={[
+                  styles.iconContainer,
+                  isSelected && { borderColor, borderWidth: 2 }, // Set border color dynamically
+                ]}
+              >
+                <Image source={icon.source} style={styles.iconImage} resizeMode="contain" />
+              </TouchableOpacity>
+              <Text style={styles.iconText}>{icon.name}</Text>
+            </View>
+          );
+        })}
       </View>
       <TouchableOpacity
         style={styles.confirmButton}
         onPress={onConfirmSelection}
-        disabled={selectedIcons.length !== 2} // 아이콘 2개가 선택되지 않으면 버튼 비활성화
+        disabled={selectedIcons.length !== 2} // Disable if not exactly 2 icons are selected
       >
         <Text style={styles.confirmButtonText}>다음</Text>
       </TouchableOpacity>
@@ -82,23 +95,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   iconWrapper: {
-    alignItems: 'center', // 텍스트와 원형 아이콘을 가운데 정렬
+    alignItems: 'center',
     marginHorizontal: 10,
     marginVertical: 20,
   },
   iconContainer: {
     width: 70,
-    height: 70, // 원 모양을 위해 높이와 너비 동일하게 설정
+    height: 70,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 50, // 원형 모양 설정
+    borderRadius: 50,
     backgroundColor: '#ffffff',
-    borderWidth: 1, // 테두리 두께
-    borderColor: '#f2f2f2', // 테두리 색상
-  },
-  selectedIcon: {
-    borderColor: '#98A2FF',
-    borderWidth: 2,
+    borderWidth: 1,
+    borderColor: '#f2f2f2',
   },
   iconImage: {
     width: 40,

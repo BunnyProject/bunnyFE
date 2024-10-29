@@ -13,10 +13,11 @@ import {
 import {useRoute, RouteProp} from '@react-navigation/native';
 import CalendarComponent from '../components/CalendarComponent';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import AkkiBottomSheet from '../components/AkkiBottomSheet';
 
 type RootStackParamList = {
   AkkiScreen: {
-    selectedIcons: {name: string; source: any}[]; // 선택된 아이콘 타입 정의
+    selectedIcons: {name: string; source: any}[];
   };
 };
 
@@ -28,95 +29,65 @@ const AkkiScreen = () => {
   const [selectedCategory, setSelectedCategory] = useState<{
     name: string;
     source: any;
+    color: string;
   } | null>(null);
   const [inputAmount, setInputAmount] = useState('');
+  const [isBottomSheetVisible, setBottomSheetVisible] = useState(false);
+  const DEFAULT_COLOR = '#DECDFF'; 
+
+  const handleOpenBottomSheet = () => {
+    setBottomSheetVisible(true);
+  };
+
+  const handleCloseBottomSheet = () => {
+    setBottomSheetVisible(false);
+  };
 
   const testData = [
     {
       name: '술',
+      source: require('../assets/icons/alcohol.png'),
       amount: 4500,
       time: '2024-10-01T09:30:00',
       id: '1',
-      source: selectedIcons.find(icon => icon.name === '술')?.source,
     },
     {
-      name: '술',
-      amount: 800,
+      name: '쇼핑',
+      source: require('../assets/icons/shopping.png'),
+      amount: 12000,
       time: '2024-10-01T11:00:00',
       id: '2',
-      source: selectedIcons.find(icon => icon.name === '술')?.source,
     },
     {
-      name: '쇼핑',
-      amount: 25000,
-      time: '2024-10-01T14:00:00',
+      name: '기타',
+      source: require('../assets/icons/plus.png'),
+      amount: 5000,
+      time: '2024-10-02T15:00:00',
       id: '3',
-      source: selectedIcons.find(icon => icon.name === '쇼핑')?.source,
     },
     {
-      name: '기타',
-      amount: 2000,
-      time: '2024-10-01T16:30:00',
+      name: '술',
+      source: require('../assets/icons/alcohol.png'),
+      amount: 3200,
+      time: '2024-10-02T20:30:00',
       id: '4',
-      source: require('../assets/icons/plus.png'),
-    },  {
-      name: '술',
-      amount: 4500,
-      time: '2024-10-01T09:30:00',
+    },
+    {
+      name: '교통',
+      source: require('../assets/icons/traffic.png'),
+      amount: 1200,
+      time: '2024-10-03T08:00:00',
       id: '5',
-      source: selectedIcons.find(icon => icon.name === '술')?.source,
     },
     {
-      name: '술',
-      amount: 800,
-      time: '2024-10-01T11:00:00',
+      name: '쇼핑',
+      source: require('../assets/icons/shopping.png'),
+      amount: 6500,
+      time: '2024-10-03T18:45:00',
       id: '6',
-      source: selectedIcons.find(icon => icon.name === '술')?.source,
-    },
-    {
-      name: '쇼핑',
-      amount: 25000,
-      time: '2024-10-01T14:00:00',
-      id: '7',
-      source: selectedIcons.find(icon => icon.name === '쇼핑')?.source,
-    },
-    {
-      name: '기타',
-      amount: 2000,
-      time: '2024-10-01T16:30:00',
-      id: '8',
-      source: require('../assets/icons/plus.png'),
-    },  {
-      name: '술',
-      amount: 4500,
-      time: '2024-10-01T09:30:00',
-      id: '9',
-      source: selectedIcons.find(icon => icon.name === '술')?.source,
-    },
-    {
-      name: '술',
-      amount: 800,
-      time: '2024-10-01T11:00:00',
-      id: '10',
-      source: selectedIcons.find(icon => icon.name === '술')?.source,
-    },
-    {
-      name: '쇼핑',
-      amount: 25000,
-      time: '2024-10-01T14:00:00',
-      id: '11',
-      source: selectedIcons.find(icon => icon.name === '쇼핑')?.source,
-    },
-    {
-      name: '기타',
-      amount: 2000,
-      time: '2024-10-01T16:30:00',
-      id: '12',
-      source: require('../assets/icons/plus.png'),
     },
   ];
 
-  // 전 페이지에서 선택된 두 카테고리에 기반한 초기 상태 설정
   const initialSavings = selectedIcons.reduce(
     (acc, icon) => {
       acc[icon.name] = 0;
@@ -129,7 +100,7 @@ const AkkiScreen = () => {
 
   // 날짜 선택 시 처리
   const handleSelectDate = (date: string) => {
-    setSelectedDate(date); // 선택된 날짜를 저장
+    setSelectedDate(date);
   };
 
   // 카테고리 버튼 클릭 시 팝업 열기
@@ -201,13 +172,19 @@ const AkkiScreen = () => {
         {/* 선택된 카테고리들을 표시하고 기타를 항상 마지막에 표시 */}
         {selectedIcons.map(icon => (
           <View style={styles.savingDetails} key={icon.name}>
-            <Text>{icon.name}</Text>
-            <Text>{savings[icon.name]?.toLocaleString() || '0'}원</Text>
+            <View style={styles.iconWithDots}>
+              <Text>{icon.name}</Text>
+              <View style={[styles.dot, { backgroundColor: icon.color }]} />
+            </View>
+            <Text style={styles.amountText}>{savings[icon.name]?.toLocaleString() || '0'}원</Text>
           </View>
         ))}
         <View style={styles.savingDetails}>
-          <Text>기타</Text>
-          <Text>{savings['기타'].toLocaleString()}원</Text>
+          <View style={styles.iconWithDots}>
+            <Text>기타</Text>
+            <View style={[styles.dot, { backgroundColor: DEFAULT_COLOR }]} />
+          </View>
+          <Text style={styles.amountText}>{savings['기타'].toLocaleString()}원</Text>
         </View>
       </View>
       {/* 팝업 모달 */}
@@ -261,6 +238,12 @@ const AkkiScreen = () => {
           onSelectDate={handleSelectDate}
           // selectedCategories={savings[selectedDate] || []}
           selectedCategories={testData}
+          onOpenBottomSheet={handleOpenBottomSheet}
+        />
+
+        <AkkiBottomSheet
+          isVisible={isBottomSheetVisible}
+          onClose={handleCloseBottomSheet}
         />
         {/* 월별 총 아끼기 금액 */}
         <View style={styles.monthlyTotalSection}>
@@ -274,6 +257,7 @@ const AkkiScreen = () => {
           {/* 카테고리별 금액 및 이미지 */}
           {selectedIcons.map(icon => (
             <View style={styles.categoryTotal} key={icon.name}>
+              <View style={[styles.dot, { backgroundColor: icon.color }]} />
               <Image source={icon.source} style={styles.categoryIcon} />
               <View style={styles.categoryDetail}>
                 <Text style={styles.categoryName}>{icon.name} 14회</Text>
@@ -284,6 +268,7 @@ const AkkiScreen = () => {
             </View>
           ))}
           <View style={styles.categoryTotal}>
+          <View style={[styles.dot, { backgroundColor: DEFAULT_COLOR }]} />
             <Image
               source={require('../assets/icons/plus.png')}
               style={styles.categoryIcon}
@@ -421,23 +406,13 @@ const styles = StyleSheet.create({
     padding: 0,
     backgroundColor: '#fcfcfc',
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 5,
     marginHorizontal: 20,
     overflow: 'hidden',
-  },
-  savingTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    backgroundColor: '#98A2FF',
-    color: '#FFFFFF',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    flex: 1,
-  },
-  titleContainer: {
+  }, titleContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -445,16 +420,38 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 3,
   },
+  savingTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
   savingTotal: {
     fontSize: 16,
     color: '#FFFFFF',
-    textAlign: 'right',
   },
   savingDetails: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 10,
+    alignItems: 'center',
+  },
+  iconWithDots: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  dotsContainer: {
+    flexDirection: 'row',
+    marginLeft: 5,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginHorizontal: 10,
+  },
+  amountText: {
+    color: '#FF7B7B',
   },
   calendarSection: {
     paddingHorizontal: 10,
