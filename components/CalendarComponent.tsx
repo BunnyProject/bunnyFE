@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  FlatList,
   Image,
   ScrollView,
 } from 'react-native';
@@ -12,6 +11,7 @@ import {Calendar} from 'react-native-calendars';
 import Modal from 'react-native-modal';
 import {format, isValid} from 'date-fns';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import {TextInput} from 'react-native-gesture-handler';
 
 type CalendarComponentProps = {
   selectedCategories: {
@@ -22,14 +22,22 @@ type CalendarComponentProps = {
     id: string;
   }[];
   onSelectDate: (date: string) => void;
+  onOpenBottomSheet: () => void;
 };
 
 const CalendarComponent: React.FC<CalendarComponentProps> = ({
   selectedCategories,
   onSelectDate,
+  onOpenBottomSheet,
 }) => {
   const [isModalVisible, setModalVisible] = useState(false);
   const [selectedDate, setSelectedDate] = useState('');
+  const [editableAmounts, setEditableAmounts] = useState(
+    selectedCategories.reduce((acc, item) => {
+      acc[item.id] = item.amount.toString();
+      return acc;
+    }, {} as {[key: string]: string}),
+  );
 
   const toggleModal = () => {
     setModalVisible(!isModalVisible);
@@ -39,6 +47,11 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
     setSelectedDate(day.dateString);
     toggleModal();
     onSelectDate(day.dateString);
+  };
+
+  // 금액 업데이트
+  const updateAmount = (id: string, amount: string) => {
+    setEditableAmounts(prev => ({...prev, [id]: amount}));
   };
 
   // 카테고리별 총 금액 계산
@@ -79,86 +92,88 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
         isVisible={isModalVisible}
         onBackdropPress={toggleModal}
         style={styles.modal}>
-        <View style={styles.modalContent}>
-          <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <View style={styles.modalContainer}>
+          <ScrollView contentContainerStyle={styles.scrollContent}>
             <View style={styles.modalHeader}>
               <TouchableOpacity onPress={toggleModal}>
                 <Ionicons name="close" size={24} color="#FF7B7B" />
               </TouchableOpacity>
             </View>
-              {isValid(new Date(selectedDate)) ? (
-                <View>
-                  <Text style={styles.modalTitle}>
-                    {format(new Date(selectedDate), 'MM월 dd일')}
-                  </Text>
-                  <View style={styles.topRow}>
-                    <View style={styles.topText}>
-                      <Text style={styles.modalSubTitle}>
-                        {format(new Date(selectedDate), 'yyyy년 MM월 dd일')}
-                      </Text>
-                      <Text style={styles.modalTotal}>
-                        총{' '}
-                        {selectedCategories
-                          .reduce((sum, item) => sum + item.amount, 0)
-                          .toLocaleString()}
-                        원
-                      </Text>
-                    </View>
-                    <TouchableOpacity
-                      onPress={() => console.log('항목 추가 버튼 클릭')}
-                      style={styles.addButtonContainer}>
-                      <View style={styles.addButtonContent}>
-                        <Ionicons name="add" size={20} color="#98A2FF" />
-                        <Text style={styles.buttonText}>항목추가</Text>
-                      </View>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ) : (
-                <Text style={styles.modalTitle}>유효하지 않은 날짜</Text>
-              )}
-              {/* 카테고리별 총 금액 표시 */}
-              <View style={styles.categorySummary}>
-                {Object.keys(categoryTotals).map((category, index) => {
-                  const icon = selectedCategories.find(
-                    item => item.name === category,
-                  )?.source;
-                  return (
-                    <View key={index} style={styles.categoryRow}>
-                      {icon && <Image source={icon} style={styles.iconImage} />}
-                      <View style={styles.categoryDetail}>
-                        <Text style={styles.categoryText}>{category}</Text>
-                        <Text style={styles.categoryAmount}>
-                          {categoryTotals[category].toLocaleString()}원
-                        </Text>
-                      </View>
-                    </View>
-                  );
-                })}
-              </View>
-            {/* 시간 순으로 정렬된 세부 내역 */}
-            <FlatList
-              data={selectedCategories.sort(
-                (a, b) =>
-                  new Date(a.time).getTime() - new Date(b.time).getTime(),
-              )}
-              keyExtractor={item => item.id}
-              renderItem={({item}) => (
-                <View style={styles.detailRow}>
-                  <View style={styles.detailText}>
-                    {/* <Image source={item.source} style={styles.iconImage} /> */}
-                    <Text style={styles.iconText}>{item.name}</Text>
-                    <Text style={styles.amountText}>
-                      {item.amount.toLocaleString()}원
+            {isValid(new Date(selectedDate)) ? (
+              <View>
+                <Text style={styles.modalTitle}>
+                  {format(new Date(selectedDate), 'MM월 dd일')}
+                </Text>
+                <View style={styles.topRow}>
+                  <View style={styles.topText}>
+                    <Text style={styles.modalSubTitle}>
+                      {format(new Date(selectedDate), 'yyyy년 MM월 dd일')}
+                    </Text>
+                    <Text style={styles.modalTotal}>
+                      총{' '}
+                      {selectedCategories
+                        .reduce((sum, item) => sum + item.amount, 0)
+                        .toLocaleString()}
+                      원
                     </Text>
                   </View>
                   <TouchableOpacity
-                    onPress={() => console.log('삭제 버튼 클릭')}>
-                    <Ionicons name="trash-outline" size={20} />
+                    onPress={onOpenBottomSheet}
+                    style={styles.addButtonContainer}>
+                    <View style={styles.addButtonContent}>
+                      <Ionicons name="add" size={20} color="#98A2FF" />
+                      <Text style={styles.buttonText}>항목추가</Text>
+                    </View>
                   </TouchableOpacity>
                 </View>
-              )}
-            />
+                {/* 카테고리별 총 금액 표시 */}
+                <View style={styles.categorySummary}>
+                  {Object.keys(categoryTotals).map((category, index) => {
+                    const icon = selectedCategories.find(
+                      item => item.name === category,
+                    )?.source;
+                    return (
+                      <View key={index} style={styles.categoryRow}>
+                        {icon && (
+                          <Image source={icon} style={styles.iconImage} />
+                        )}
+                        <View style={styles.categoryDetail}>
+                          <Text style={styles.categoryText}>{category}</Text>
+                          <Text style={styles.categoryAmount}>
+                            {categoryTotals[category].toLocaleString()}원
+                          </Text>
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+                {/* 시간 순으로 정렬된 세부 내역 */}
+                {selectedCategories
+                  .sort(
+                    (a, b) =>
+                      new Date(a.time).getTime() - new Date(b.time).getTime(),
+                  )
+                  .map(item => (
+                    <View style={styles.detailRow} key={item.id}>
+                      <View style={styles.detailText}>
+                        <Text style={styles.iconText}>{item.name}</Text>
+                        <TextInput
+                          style={styles.amountText}
+                          keyboardType="numeric"
+                          value={editableAmounts[item.id]}
+                          onChangeText={text => updateAmount(item.id, text)}
+                        />
+                      </View>
+                      <TouchableOpacity
+                        onPress={() => console.log('삭제 버튼 클릭')}>
+                        <Ionicons name="trash-outline" size={20} />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+              </View>
+            ) : (
+              <Text style={styles.modalTitle}>유효하지 않은 날짜</Text>
+            )}
           </ScrollView>
         </View>
       </Modal>
@@ -171,15 +186,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginHorizontal: 20,
   },
-  modalContent: {
+  modalContainer: {
+    height: '80%',
     backgroundColor: '#FFFFFF',
-    height: '70%',
     borderRadius: 10,
     paddingHorizontal: 20,
     paddingVertical: 20,
-    overflow: 'hidden',
   },
-  scrollContainer: {
+  scrollContent: {
+    flexGrow: 1,
     paddingBottom: 20,
   },
   modalHeader: {
@@ -247,7 +262,6 @@ const styles = StyleSheet.create({
   categoryAmount: {
     fontSize: 16,
     fontWeight: 'bold',
-    marginLeft: 'auto',
     color: '#000000',
   },
   detailRow: {
