@@ -1,5 +1,6 @@
-import React, {useState} from 'react';
+import React, {useRef, useState} from 'react';
 import {
+  Animated,
   ScrollView,
   View,
   Text,
@@ -8,11 +9,9 @@ import {
   Modal,
   TouchableOpacity,
   TextInput,
-  Button,
 } from 'react-native';
 import {useRoute, RouteProp} from '@react-navigation/native';
 import CalendarComponent from '../components/CalendarComponent';
-import Ionicons from 'react-native-vector-icons/Ionicons';
 import AkkiBottomSheet from '../components/AkkiBottomSheet';
 
 type RootStackParamList = {
@@ -20,6 +19,11 @@ type RootStackParamList = {
     selectedIcons: {name: string; source: any}[];
   };
 };
+type Carrot = {id: number; fallAnim: Animated.Value; position: number};
+type Category = {name: string; source: any; color?: string};
+
+const bunnyImage = require('../assets/AkkiBunny.png');
+const carrotImage = require('../assets/Carrot.png');
 
 const AkkiScreen = () => {
   const route = useRoute<RouteProp<RootStackParamList, 'AkkiScreen'>>();
@@ -33,7 +37,62 @@ const AkkiScreen = () => {
   } | null>(null);
   const [inputAmount, setInputAmount] = useState('');
   const [isBottomSheetVisible, setBottomSheetVisible] = useState(false);
-  const DEFAULT_COLOR = '#DECDFF'; 
+
+  const bunnyBounceAnim = useRef(new Animated.Value(0)).current;
+  const [accumulatedCarrots, setAccumulatedCarrots] = useState([]);
+  const DEFAULT_COLOR = '#DECDFF';
+
+  const handleCategoryPress = (icon: Category) => {
+    setSelectedCategory(icon);
+    setModalVisible(true); // 모달 열기
+
+    // 토끼 튀는 애니메이션
+    Animated.sequence([
+      Animated.timing(bunnyBounceAnim, {
+        toValue: -10,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(bunnyBounceAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const addAccumulatedCarrot = () => {
+    const newCarrot = {
+      id: Date.now(),
+      fallAnim: new Animated.Value(-100), // 화면 위쪽에서 시작
+      position: accumulatedCarrots.length, // 기존 당근의 개수에 따라 위치 조정
+    };
+
+    setAccumulatedCarrots(prevCarrots => [...prevCarrots, newCarrot]);
+
+    // 느리게 내려오는 애니메이션
+    Animated.timing(newCarrot.fallAnim, {
+      toValue: 10, // 화면 아래쪽으로 떨어지는 위치 (bottom에서 10만큼 떨어짐)
+      duration: 5000, // 속도를 느리게 설정 (3000ms = 3초)
+      useNativeDriver: true,
+    }).start();
+  };
+
+  // 모달 완료 버튼 클릭 시 처리
+  const handleComplete = () => {
+    if (selectedCategory && inputAmount) {
+      setSavings(prevSavings => ({
+        ...prevSavings,
+        [selectedCategory.name]:
+          prevSavings[selectedCategory.name] + parseInt(inputAmount, 10),
+      }));
+      setModalVisible(false); // 모달 닫기
+      setInputAmount('');
+
+      // "완료" 버튼을 눌렀을 때만 당근 추가
+      addAccumulatedCarrot();
+    }
+  };
 
   const handleOpenBottomSheet = () => {
     setBottomSheetVisible(true);
@@ -50,6 +109,7 @@ const AkkiScreen = () => {
       amount: 4500,
       time: '2024-10-01T09:30:00',
       id: '1',
+      color: '#98A2FF',
     },
     {
       name: '쇼핑',
@@ -57,6 +117,7 @@ const AkkiScreen = () => {
       amount: 12000,
       time: '2024-10-01T11:00:00',
       id: '2',
+      color: '#ACD7FF',
     },
     {
       name: '기타',
@@ -64,6 +125,7 @@ const AkkiScreen = () => {
       amount: 5000,
       time: '2024-10-02T15:00:00',
       id: '3',
+      color: DEFAULT_COLOR,
     },
     {
       name: '술',
@@ -71,13 +133,7 @@ const AkkiScreen = () => {
       amount: 3200,
       time: '2024-10-02T20:30:00',
       id: '4',
-    },
-    {
-      name: '교통',
-      source: require('../assets/icons/traffic.png'),
-      amount: 1200,
-      time: '2024-10-03T08:00:00',
-      id: '5',
+      color: '#98A2FF',
     },
     {
       name: '쇼핑',
@@ -85,10 +141,11 @@ const AkkiScreen = () => {
       amount: 6500,
       time: '2024-10-03T18:45:00',
       id: '6',
+      color: '#ACD7FF',
     },
   ];
 
-  const initialSavings = selectedIcons.reduce(
+  const initialSavings: Record<string, number> = selectedIcons.reduce(
     (acc, icon) => {
       acc[icon.name] = 0;
       return acc;
@@ -96,40 +153,36 @@ const AkkiScreen = () => {
     {기타: 0},
   );
 
-  const [savings, setSavings] = useState(initialSavings);
+  const [savings, setSavings] =
+    useState<Record<string, number>>(initialSavings);
 
   // 날짜 선택 시 처리
   const handleSelectDate = (date: string) => {
     setSelectedDate(date);
   };
 
-  // 카테고리 버튼 클릭 시 팝업 열기
-  const openModal = (category: {name: string; source: any}) => {
-    setSelectedCategory(category);
-    setModalVisible(true);
-  };
-
-  // 팝업 완료 버튼 클릭 시 처리
-  const handleComplete = () => {
-    if (selectedCategory && inputAmount) {
-      setSavings(prevSavings => ({
-        ...prevSavings,
-        [selectedCategory.name]:
-          prevSavings[selectedCategory.name] + parseInt(inputAmount, 10),
-      }));
-      setModalVisible(false);
-      setInputAmount('');
-    }
-  };
-
   return (
     <ScrollView style={styles.container}>
-      {/* 상단 부분 (이미지 포함) */}
+      {/* 토끼와 당근 애니메이션 섹션 */}
       <View style={styles.topSection}>
         <Image
           source={require('../assets/akki-back.png')}
-          style={styles.bunnyImage}
+          style={styles.backImage}
         />
+        <Animated.Image
+          source={bunnyImage}
+          style={[
+            styles.bunnyImage,
+            {transform: [{translateY: bunnyBounceAnim}]},
+          ]}
+        />
+        {accumulatedCarrots.map((carrot, index) => (
+          <Image
+            key={carrot.id}
+            source={carrotImage}
+            style={[styles.carrotImage, {left: 200 + index * 20, bottom: 10}]}
+          />
+        ))}
       </View>
       {/* 선택된 아이콘과 기타 버튼을 표시하는 카테고리 버튼 */}
       <View style={styles.categoryContainer}>
@@ -137,7 +190,7 @@ const AkkiScreen = () => {
           <TouchableOpacity
             key={icon.name}
             style={styles.category}
-            onPress={() => openModal(icon)}>
+            onPress={() => handleCategoryPress(icon)}>
             <Image source={icon.source} style={styles.iconImage} />
             <Text style={styles.iconText}>{icon.name}</Text>
           </TouchableOpacity>
@@ -145,7 +198,7 @@ const AkkiScreen = () => {
         <TouchableOpacity
           style={styles.category}
           onPress={() =>
-            openModal({
+            handleCategoryPress({
               name: '기타',
               source: require('../assets/icons/plus.png'),
             })
@@ -174,20 +227,23 @@ const AkkiScreen = () => {
           <View style={styles.savingDetails} key={icon.name}>
             <View style={styles.iconWithDots}>
               <Text>{icon.name}</Text>
-              <View style={[styles.dot, { backgroundColor: icon.color }]} />
+              <View style={[styles.dot, {backgroundColor: icon.color}]} />
             </View>
-            <Text style={styles.amountText}>{savings[icon.name]?.toLocaleString() || '0'}원</Text>
+            <Text style={styles.amountText}>
+              {savings[icon.name]?.toLocaleString() || '0'}원
+            </Text>
           </View>
         ))}
         <View style={styles.savingDetails}>
           <View style={styles.iconWithDots}>
             <Text>기타</Text>
-            <View style={[styles.dot, { backgroundColor: DEFAULT_COLOR }]} />
+            <View style={[styles.dot, {backgroundColor: DEFAULT_COLOR}]} />
           </View>
-          <Text style={styles.amountText}>{savings['기타'].toLocaleString()}원</Text>
+          <Text style={styles.amountText}>
+            {savings['기타'].toLocaleString()}원
+          </Text>
         </View>
       </View>
-      {/* 팝업 모달 */}
       <Modal visible={modalVisible} transparent={true} animationType="slide">
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
@@ -257,7 +313,7 @@ const AkkiScreen = () => {
           {/* 카테고리별 금액 및 이미지 */}
           {selectedIcons.map(icon => (
             <View style={styles.categoryTotal} key={icon.name}>
-              <View style={[styles.dot, { backgroundColor: icon.color }]} />
+              <View style={[styles.dot, {backgroundColor: icon.color}]} />
               <Image source={icon.source} style={styles.categoryIcon} />
               <View style={styles.categoryDetail}>
                 <Text style={styles.categoryName}>{icon.name} 14회</Text>
@@ -268,7 +324,7 @@ const AkkiScreen = () => {
             </View>
           ))}
           <View style={styles.categoryTotal}>
-          <View style={[styles.dot, { backgroundColor: DEFAULT_COLOR }]} />
+            <View style={[styles.dot, {backgroundColor: DEFAULT_COLOR}]} />
             <Image
               source={require('../assets/icons/plus.png')}
               style={styles.categoryIcon}
@@ -377,12 +433,27 @@ const styles = StyleSheet.create({
     height: 250,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#E0F7FA',
+    position: 'relative',
   },
-  bunnyImage: {
+  backImage: {
     width: '100%',
     height: 250,
     resizeMode: 'cover',
+    position: 'absolute',
+    top: 0,
+  },
+  bunnyImage: {
+    width: 100,
+    height: 100,
+    resizeMode: 'contain',
+    position: 'absolute',
+    top: '50%',
+  },
+  carrotImage: {
+    position: 'absolute',
+    width: 30,
+    height: 30,
+    resizeMode: 'contain',
   },
   categoryContainer: {
     flexDirection: 'row',
@@ -401,24 +472,36 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
+  iconImage: {
+    width: 40,
+    height: 40,
+    resizeMode: 'contain',
+  },
+  iconText: {
+    marginTop: 5,
+    fontSize: 12,
+    textAlign: 'center',
+    color: '#808080',
+  },
   savingSummary: {
     borderRadius: 10,
     padding: 0,
     backgroundColor: '#fcfcfc',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 5,
     marginHorizontal: 20,
     overflow: 'hidden',
-  }, titleContainer: {
+  },
+  titleContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#98A2FF',
     paddingHorizontal: 10,
-    paddingVertical: 3,
+    paddingVertical: 10,
   },
   savingTitle: {
     fontSize: 18,
@@ -519,17 +602,17 @@ const styles = StyleSheet.create({
     color: '#000000',
     fontWeight: 'bold',
   },
-  iconImage: {
-    width: 40,
-    height: 40,
-    resizeMode: 'contain',
-  },
-  iconText: {
-    marginTop: 5,
-    fontSize: 12,
-    textAlign: 'center',
-    color: '#808080',
-  },
+  // iconImage: {
+  //   width: 40,
+  //   height: 40,
+  //   resizeMode: 'contain',
+  // },
+  // iconText: {
+  //   marginTop: 5,
+  //   fontSize: 12,
+  //   textAlign: 'center',
+  //   color: '#808080',
+  // },
 });
 
 export default AkkiScreen;
