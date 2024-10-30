@@ -12,6 +12,7 @@ import Header from '../components/Header';
 import BunnyScreen from '../screens/BunnyScreen';
 import AkkiScreen from '../screens/AkkiScreen';
 import IconSelectScreen from '../screens/IconSelectScreen';
+import AkkiStartScreen from '../screens/AkkiStartScreen';
 
 // 이미지 경로 불러오기
 const bunnyIcon = require('../assets/bunny.png');
@@ -35,6 +36,7 @@ export type RootStackParamList = {
   Bunny: undefined;
   Akki: undefined;
   IconSelectScreen: undefined;
+  AkkiStartScreen: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -86,10 +88,20 @@ const HomeTabNavigator = () => {
       />
       <Tab.Screen name="Home" component={HomeScreen} options={{title: '홈'}} />
       <Tab.Screen
+        name="SavingStart"
+        component={AkkiStartScreen}
+        options={{title: '아끼기'}}
+      />
+      {/* <Tab.Screen
+        name="Saving"
+        component={AkkiScreen}
+        options={{title: '아끼기'}}
+      />
+      <Tab.Screen
         name="Saving"
         component={IconSelectScreen}
         options={{title: '아끼기'}}
-      />
+      /> */}
     </Tab.Navigator>
   );
 };
@@ -132,7 +144,7 @@ const MainNavigator: React.FC = () => {
         component={HomeTabNavigator}
         options={{
           header: () => <Header />,
-          headerTitle: '', // 제목을 빈 문자열로 설정
+          headerTitle: '',
         }}
       />
       <Stack.Screen
@@ -146,13 +158,26 @@ const MainNavigator: React.FC = () => {
       <Stack.Screen
         name="IconSelectScreen"
         component={IconSelectScreen} // Icon 대신 IconSelectScreen 사용
-        options={{title: '아이콘 선택'}}
+        options={{
+          header: () => <Header />,
+          headerTitle: '', // 제목을 빈 문자열로 설정
+        }}
       />
-
       <Stack.Screen
         name="Akki"
         component={AkkiScreen}
-        options={{title: '아끼'}}
+        options={{
+          header: () => <Header />,
+          headerTitle: '', // 제목을 빈 문자열로 설정
+        }}
+      />
+      <Stack.Screen
+        name="AkkiStartScreen"
+        component={AkkiStartScreen}
+        options={{
+          header: () => <Header />,
+          headerTitle: '', // 제목을 빈 문자열로 설정
+        }}
       />
     </Stack.Navigator>
   );
