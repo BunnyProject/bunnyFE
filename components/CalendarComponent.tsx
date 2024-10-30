@@ -20,6 +20,7 @@ type CalendarComponentProps = {
     amount: number;
     time: string;
     id: string;
+    color: string;
   }[];
   onSelectDate: (date: string) => void;
   onOpenBottomSheet: () => void;
@@ -134,10 +135,14 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
                     )?.source;
                     return (
                       <View key={index} style={styles.categoryRow}>
+                        <View
+                            style={[styles.dot, {backgroundColor: icon.color}]}
+                          />
                         {icon && (
                           <Image source={icon} style={styles.iconImage} />
                         )}
                         <View style={styles.categoryDetail}>
+                          
                           <Text style={styles.categoryText}>{category}</Text>
                           <Text style={styles.categoryAmount}>
                             {categoryTotals[category].toLocaleString()}원
@@ -156,6 +161,9 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
                   .map(item => (
                     <View style={styles.detailRow} key={item.id}>
                       <View style={styles.detailText}>
+                      <View
+                            style={[styles.dot, {backgroundColor: item.color}]}
+                          />
                         <Text style={styles.iconText}>{item.name}</Text>
                         <TextInput
                           style={styles.amountText}
@@ -185,6 +193,12 @@ const styles = StyleSheet.create({
   modal: {
     justifyContent: 'center',
     marginHorizontal: 20,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginHorizontal: 10,
   },
   modalContainer: {
     height: '80%',
