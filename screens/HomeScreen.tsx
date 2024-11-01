@@ -1,32 +1,27 @@
-import React, {useState, useEffect, useMemo} from 'react';
-import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
-// import * as Progress from 'react-native-progress';
+import React, { useState, useEffect, useMemo } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import moment from 'moment-timezone';
-import Svg, {Defs, LinearGradient, Stop, Rect, Circle} from 'react-native-svg';
+import Svg, { Defs, LinearGradient, Stop, Rect, Circle } from 'react-native-svg';
 import Icon from 'react-native-vector-icons/FontAwesome';
+import SavingsModal from '../components/SavingModal';
 
 export default function HomeScreen() {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [earnings, setEarnings] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [monthlyGoal, setMonthlyGoal] = useState(250000);
+  const unitPrice = 4000; // 단위 가격 예시
 
   const startTime = useMemo(() => {
-    return moment
-      .tz('Asia/Seoul')
-      .set({hour: 18, minute: 22, second: 0})
-      .toDate();
+    return moment.tz('Asia/Seoul').set({ hour: 14, minute: 0, second: 0 }).toDate();
   }, []);
 
   const endTime = useMemo(() => {
-    return moment
-      .tz('Asia/Seoul')
-      .set({hour: 20, minute: 0, second: 0})
-      .toDate();
+    return moment.tz('Asia/Seoul').set({ hour: 20, minute: 0, second: 0 }).toDate();
   }, []);
 
   const ratePerMinute = 50;
-
-  const monthlyGoal = 250000;
   const todayEarnings = 68000;
 
   useEffect(() => {
@@ -40,19 +35,11 @@ export default function HomeScreen() {
         setElapsedTime(0);
         setTimeLeft((endTime.getTime() - startTime.getTime()) / 1000);
       } else {
-        const elapsedSeconds = Math.floor(
-          (now.getTime() - startTime.getTime()) / 1000,
-        );
+        const elapsedSeconds = Math.floor((now.getTime() - startTime.getTime()) / 1000);
         setElapsedTime(elapsedSeconds);
-
-        const currentEarnings = Math.floor(
-          (elapsedSeconds / 60) * ratePerMinute,
-        );
+        const currentEarnings = Math.floor((elapsedSeconds / 60) * ratePerMinute);
         setEarnings(currentEarnings);
-
-        const remainingSeconds = Math.floor(
-          (endTime.getTime() - now.getTime()) / 1000,
-        );
+        const remainingSeconds = Math.floor((endTime.getTime() - now.getTime()) / 1000);
         setTimeLeft(remainingSeconds);
       }
     }, 1000);
@@ -62,25 +49,24 @@ export default function HomeScreen() {
 
   const currentDate = moment().tz('Asia/Seoul');
   const currentDayOfMonth = moment().tz('Asia/Seoul').date();
-  // const totalDaysInMonth = moment().tz('Asia/Seoul').daysInMonth();
   const month = currentDate.month() + 1;
   const dayOfWeekStr = currentDate.format('dddd');
 
-  // 시간을 시:분:초 형식으로 포맷팅하는 함수
-  const formatTime = (seconds: number) => {
+  const formatTime = seconds => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
-    // remainingSeconds 값이 소수점이 나오지 않도록 Math.floor 적용
     const remainingSeconds = Math.floor(seconds % 60);
     return `${hours}시간 ${minutes}분 ${remainingSeconds}초`;
   };
 
-  // 퇴근 후 경과 시간도 정상적으로 8시간 0분 0초로 표시되도록 조건 추가
   const formattedElapsedTime = elapsedTime >= 8 * 3600 ? formatTime(8 * 3600) : formatTime(elapsedTime);
   const formattedTimeLeft = timeLeft <= 0 ? formatTime(0) : formatTime(timeLeft);
-  
-  const progress =
-    elapsedTime / ((endTime.getTime() - startTime.getTime()) / 1000);
+
+  const progress = elapsedTime / ((endTime.getTime() - startTime.getTime()) / 1000);
+
+  const toggleModal = () => {
+    setIsModalVisible(!isModalVisible);
+  };
 
   return (
     <View style={styles.container}>
@@ -137,23 +123,20 @@ export default function HomeScreen() {
       <Text style={styles.header}>이달의 아끼기 목표</Text>
       <View style={styles.monthlyGoalContainer}>
         <View style={styles.goalTextContainer}>
-            <Text style={styles.currentGoal}>
-              {todayEarnings.toLocaleString()}원
-            </Text>
+          <Text style={styles.currentGoal}>
+            {todayEarnings.toLocaleString()}원
+          </Text>
           <View style={styles.goalTextWrapper}>
-
             <Text style={styles.totalGoal}>
               {monthlyGoal.toLocaleString()}원
             </Text>
-          <TouchableOpacity style={styles.iconButton}>
-            <Icon name="pencil" size={15} color="#4f4f4f" />
-          </TouchableOpacity>
+            <TouchableOpacity style={styles.iconButton} onPress={toggleModal}>
+              <Icon name="pencil" size={15} color="#4f4f4f" />
+            </TouchableOpacity>
           </View>
-
         </View>
 
         <View style={styles.progressBarContainer}>
-          {/* 채워지지 않은 막대 그래프 (배경) */}
           <Svg height="20" width="100%">
             <Defs>
               <LinearGradient id="gradBar" x1="0" y1="0" x2="1" y2="0">
@@ -164,25 +147,25 @@ export default function HomeScreen() {
             <Rect
               x="0"
               y="0"
-              width="100%" // 전체 바의 넓이
+              width="100%"
               height="20"
-              fill="#f4f4f4" // 채워지지 않은 부분 색상
-              rx="0" // 전체 배경은 직각으로 설정
+              fill="#f4f4f4"
+              rx="0"
               ry="0"
             />
-            {/* 채워진 막대 그래프 */}
             <Rect
               x="0"
               y="0"
-              width={`${(todayEarnings / monthlyGoal) * 100}%`} // 진행률에 따라 넓이 설정
+              width={`${(todayEarnings / monthlyGoal) * 100}%`}
               height="20"
               fill="url(#gradBar)"
-              rx="10" // 채워진 부분만 모서리를 둥글게 설정
+              rx="10"
               ry="10"
             />
           </Svg>
         </View>
       </View>
+      <SavingsModal isVisible={isModalVisible} onClose={toggleModal} />
     </View>
   );
 }
@@ -304,4 +287,56 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     overflow: 'hidden',
   },
+  estimatedAmountText: {
+    fontSize: 16,
+    color: '#8c9eff',
+    fontWeight: 'bold',
+    marginTop: 10,
+    textAlign: 'center',
+  },
+  sliderLabel: {
+    fontSize: 14,
+    color: '#555',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  modalContent: {
+    width: 300,
+    padding: 20,
+    backgroundColor: 'white',
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  goalInput: {
+    width: '100%',
+    height: 40,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    marginBottom: 20,
+    borderRadius: 5,
+    textAlign: 'center',
+  },
+  saveButton: {
+    backgroundColor: '#98A2FF',
+    paddingVertical: 10,
+    paddingHorizontal: 30,
+    borderRadius: 5,
+  },
+  saveButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  
 });

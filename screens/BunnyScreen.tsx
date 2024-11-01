@@ -16,14 +16,14 @@ export default function BunnyScreen() {
   const startTime = useMemo(() => {
     return moment
       .tz('Asia/Seoul')
-      .set({ hour: 9, minute: 0, second: 0 })
+      .set({ hour: 14, minute: 0, second: 0 })
       .toDate();
   }, []);
 
   const endTime = useMemo(() => {
     return moment
       .tz('Asia/Seoul')
-      .set({ hour: 17, minute: 0, second: 0 })
+      .set({ hour: 20, minute: 0, second: 0 })
       .toDate();
   }, []);
 
