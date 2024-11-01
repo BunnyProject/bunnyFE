@@ -82,6 +82,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-start',
     backgroundColor: '#FFFFFF',
+    paddingVertical: 30,
   },
   title: {
     fontSize: 18,
@@ -124,7 +125,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#98A2FF',
     padding: 15,
     borderRadius: 30,
-    marginTop: 60,
+    marginTop: 80,
     width: '30%',
     alignItems: 'center',
   },

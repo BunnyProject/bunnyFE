@@ -13,6 +13,7 @@ import {
 import {useRoute, RouteProp} from '@react-navigation/native';
 import CalendarComponent from '../components/CalendarComponent';
 import AkkiBottomSheet from '../components/AkkiBottomSheet';
+import {Easing} from 'react-native';
 
 type RootStackParamList = {
   AkkiScreen: {
@@ -64,19 +65,20 @@ const AkkiScreen = () => {
   const addAccumulatedCarrot = () => {
     const newCarrot = {
       id: Date.now(),
-      fallAnim: new Animated.Value(-100), // 화면 위쪽에서 시작
-      position: accumulatedCarrots.length, // 기존 당근의 개수에 따라 위치 조정
+      fallAnim: new Animated.Value(-500), 
+      position: accumulatedCarrots.length,
     };
-
+  
     setAccumulatedCarrots(prevCarrots => [...prevCarrots, newCarrot]);
-
-    // 느리게 내려오는 애니메이션
+  
     Animated.timing(newCarrot.fallAnim, {
-      toValue: 10, // 화면 아래쪽으로 떨어지는 위치 (bottom에서 10만큼 떨어짐)
-      duration: 5000, // 속도를 느리게 설정 (3000ms = 3초)
+      toValue: 20, 
+      duration: 7000, 
+      easing: Easing.bounce, 
       useNativeDriver: true,
     }).start();
   };
+  
 
   // 모달 완료 버튼 클릭 시 처리
   const handleComplete = () => {
