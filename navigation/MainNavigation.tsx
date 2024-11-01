@@ -1,7 +1,7 @@
-import React from 'react';
-import {createStackNavigator} from '@react-navigation/stack';
-import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
-import {Image} from 'react-native'; // Image 추가
+import React, { useState } from 'react';
+import { createStackNavigator } from '@react-navigation/stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Image } from 'react-native';
 import LandingScreen from '../screens/LandingScreen';
 import UserInfoScreen from '../screens/UserInfoScreen';
 import UserInfo2Screen from '../screens/UserInfo2Screen';
@@ -13,6 +13,7 @@ import BunnyScreen from '../screens/BunnyScreen';
 import AkkiScreen from '../screens/AkkiScreen';
 import IconSelectScreen from '../screens/IconSelectScreen';
 import AkkiStartScreen from '../screens/AkkiStartScreen';
+import MoreScreen from '../screens/MoreScreen';
 
 // 이미지 경로 불러오기
 const bunnyIcon = require('../assets/bunny.png');
@@ -37,32 +38,61 @@ export type RootStackParamList = {
   Akki: undefined;
   IconSelectScreen: undefined;
   AkkiStartScreen: undefined;
+  MoreScreen: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
+const SavingStack = createStackNavigator();
+
+const SavingStackNavigator = () => {
+  // const [isFirstSavingClick, setIsFirstSavingClick] = useState(false);
+  const [isFirstSavingClick, setIsFirstSavingClick] = useState(true);
+
+  return (
+    <SavingStack.Navigator>
+      {isFirstSavingClick ? (
+        <SavingStack.Screen
+          name="AkkiStartScreen"
+          component={AkkiStartScreen}
+          options={{ headerShown: false }}
+          listeners={{
+            focus: () => setIsFirstSavingClick(false),
+          }}
+        />
+      ) : (
+        <SavingStack.Screen
+          name="AkkiScreen"
+          component={AkkiScreen}
+          options={{ headerShown: false }}
+        />
+      )}
+    </SavingStack.Navigator>
+  );
+};
 
 const HomeTabNavigator = () => {
   return (
     <Tab.Navigator
-      screenOptions={({route}) => ({
-        tabBarIcon: ({color, size}) => {
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ color, size }) => {
           let iconSource;
           let iconSize = size;
+
           if (route.name === 'Home') {
-            iconSource = homeIcon; // 홈 탭 아이콘
+            iconSource = homeIcon;
             iconSize = 25;
           } else if (route.name === 'Bunny') {
-            iconSource = bunnyIcon; // bunny.png 아이콘 설정
-            iconSize = 30; // 아이콘 크기
+            iconSource = bunnyIcon;
+            iconSize = 30;
           } else if (route.name === 'Saving') {
-            iconSource = savingIcon; // Akki.png 아이콘 설정
-            iconSize = 30; // 아이콘 크기
+            iconSource = savingIcon;
+            iconSize = 30;
           }
           return (
             <Image
               source={iconSource}
-              style={{width: iconSize, height: iconSize, tintColor: color}}
+              style={{ width: iconSize, height: iconSize, tintColor: color }}
               resizeMode="contain"
             />
           );
@@ -72,73 +102,32 @@ const HomeTabNavigator = () => {
         tabBarStyle: {
           height: 70,
           paddingBottom: 10,
-          borderTopLeftRadius: 35, // 왼쪽 상단 모서리 둥글게
-          borderTopRightRadius: 35, // 오른쪽 상단 모서리 둥글게
-          // overflow: 'hidden',
+          borderTopLeftRadius: 35,
+          borderTopRightRadius: 35,
         },
         tabBarLabelStyle: {
           fontSize: 12,
           marginBottom: 5,
         },
-      })}>
-      <Tab.Screen
-        name="Bunny"
-        component={BunnyScreen}
-        options={{title: '버니'}}
-      />
-      <Tab.Screen name="Home" component={HomeScreen} options={{title: '홈'}} />
-      <Tab.Screen
-        name="SavingStart"
-        component={AkkiStartScreen}
-        options={{title: '아끼기'}}
-      />
-      {/* <Tab.Screen
-        name="Saving"
-        component={AkkiScreen}
-        options={{title: '아끼기'}}
-      />
-      <Tab.Screen
-        name="Saving"
-        component={IconSelectScreen}
-        options={{title: '아끼기'}}
-      /> */}
+        headerShown: false,
+      })}
+    >
+      <Tab.Screen name="Bunny" component={BunnyScreen} options={{ title: '버니' }} />
+      <Tab.Screen name="Home" component={HomeScreen} options={{ title: '홈' }} />
+      <Tab.Screen name="Saving" component={SavingStackNavigator} options={{ title: '아끼기' }} />
     </Tab.Navigator>
   );
 };
 
 const MainNavigator: React.FC = () => {
   return (
-    <Stack.Navigator initialRouteName="Landing">
-      <Stack.Screen
-        name="Landing"
-        component={LandingScreen}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name="UserInfo"
-        component={UserInfoScreen}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name="UserInfo2"
-        component={UserInfo2Screen}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name="UserInfo3"
-        component={UserInfo2Screen}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name="Loading"
-        component={LoadingScreen}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name="Result"
-        component={ResultScreen}
-        options={{headerShown: false}}
-      />
+    <Stack.Navigator initialRouteName="Home">
+      <Stack.Screen name="Landing" component={LandingScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="UserInfo" component={UserInfoScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="UserInfo2" component={UserInfo2Screen} options={{ headerShown: false }} />
+      <Stack.Screen name="UserInfo3" component={UserInfo2Screen} options={{ headerShown: false }} />
+      <Stack.Screen name="Loading" component={LoadingScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="Result" component={ResultScreen} options={{ headerShown: false }} />
       <Stack.Screen
         name="Home"
         component={HomeTabNavigator}
@@ -152,15 +141,15 @@ const MainNavigator: React.FC = () => {
         component={HomeTabNavigator}
         options={{
           header: () => <Header />,
-          headerTitle: '', // 제목을 빈 문자열로 설정
+          headerTitle: '',
         }}
       />
       <Stack.Screen
         name="IconSelectScreen"
-        component={IconSelectScreen} // Icon 대신 IconSelectScreen 사용
+        component={IconSelectScreen}
         options={{
           header: () => <Header />,
-          headerTitle: '', // 제목을 빈 문자열로 설정
+          headerTitle: '',
         }}
       />
       <Stack.Screen
@@ -168,7 +157,7 @@ const MainNavigator: React.FC = () => {
         component={AkkiScreen}
         options={{
           header: () => <Header />,
-          headerTitle: '', // 제목을 빈 문자열로 설정
+          headerTitle: '',
         }}
       />
       <Stack.Screen
@@ -176,7 +165,15 @@ const MainNavigator: React.FC = () => {
         component={AkkiStartScreen}
         options={{
           header: () => <Header />,
-          headerTitle: '', // 제목을 빈 문자열로 설정
+          headerTitle: '',
+        }}
+      />
+      <Stack.Screen
+        name="MoreScreen"
+        component={MoreScreen}
+        options={{
+          headerShown: false,
+          headerTitle: '',
         }}
       />
     </Stack.Navigator>

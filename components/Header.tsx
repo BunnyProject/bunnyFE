@@ -1,7 +1,9 @@
+import { useNavigation } from '@react-navigation/native';
 import React from 'react';
 import { View, Image, StyleSheet, TouchableOpacity } from 'react-native';
 
 const Header = () => {
+  const navigation = useNavigation();
   return (
     <View style={styles.headerContainer}>
       {/* 왼쪽 빈 공간 */}
@@ -15,10 +17,7 @@ const Header = () => {
       {/* 오른쪽 햄버거 메뉴 */}
       <TouchableOpacity
         style={styles.menuButton}
-        onPress={() => {
-          // 햄버거 메뉴 버튼 클릭 시 동작 정의
-          console.log('햄버거 메뉴 클릭됨');
-        }}
+        onPress={() => navigation.navigate('MoreScreen')} // 햄버거 메뉴 클릭 시 MoreScreen으로 이동
       >
         <Image source={require('../assets/menu.png')} style={styles.menuIcon} />
       </TouchableOpacity>
