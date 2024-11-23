@@ -11,9 +11,9 @@ import {
   TextInput,
 } from 'react-native';
 import {useRoute, RouteProp} from '@react-navigation/native';
+import {Easing} from 'react-native';
 import CalendarComponent from '../components/CalendarComponent';
 import AkkiBottomSheet from '../components/AkkiBottomSheet';
-import {Easing} from 'react-native';
 
 type RootStackParamList = {
   AkkiScreen: {
