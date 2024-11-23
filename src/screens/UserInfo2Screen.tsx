@@ -9,20 +9,26 @@ import {
 } from 'react-native';
 import {Dropdown} from 'react-native-element-dropdown';
 import {StackNavigationProp} from '@react-navigation/stack';
-import {RootStackParamList} from '../navigation/MainNavigation';
+import {RouteProp} from '@react-navigation/native'; // RouteProp 추가
+import {RootStackParamList} from '../types/types';
 
 type Info2ScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
   'UserInfo2'
 >;
 
+type Info2ScreenRouteProp = RouteProp<RootStackParamList, 'UserInfo2'>;
+
 type Props = {
   navigation: Info2ScreenNavigationProp;
+  route: Info2ScreenRouteProp; // route 추가
 };
 
 // 10분 단위로 시간을 선택할 수 있는 데이터 생성
 const timeData = Array.from({length: 24 * 6}, (_, i) => {
-  const hours = Math.floor(i / 6).toString().padStart(2, '0');
+  const hours = Math.floor(i / 6)
+    .toString()
+    .padStart(2, '0');
   const minutes = (i % 6) * 10;
   return {
     label: `${hours}:${minutes.toString().padStart(2, '0')}`,
@@ -37,7 +43,7 @@ const salaryTypeData = [
   {label: '시급', value: '시급'},
 ];
 
-export default function Info2Screen({navigation}: Props) {
+export default function Info2Screen({navigation, route}: Props) {
   const [salaryType, setSalaryType] = useState('월급');
   const [salary, setSalary] = useState('');
   const [workDays, setWorkDays] = useState<string[]>([]);
@@ -64,7 +70,7 @@ export default function Info2Screen({navigation}: Props) {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>반갑습니다. 홍길동 님.</Text>
+        <Text style={styles.title}>반갑습니다. {route.params.name} 님.</Text>
         <Text style={styles.subtitle}>
           수령하시는 급여와 근무시간을 알려주세요.
         </Text>
@@ -155,12 +161,10 @@ export default function Info2Screen({navigation}: Props) {
               flatListProps={{
                 initialNumToRender: 2,
                 maxToRenderPerBatch: 2,
-                initialScrollIndex: timeData.findIndex(item => item.value === startTime), // 현재 선택된 값으로 스크롤
-                // getItemLayout: (_, index) => ({ length: 50, offset: 50 * index, index }), 
+                initialScrollIndex: timeData.findIndex(
+                  item => item.value === startTime,
+                ), // 현재 선택된 값으로 스크롤
               }}
-              // containerStyle={{
-              //   marginTop: 1, // 드롭다운과 필드 사이의 간격을 줄임
-              // }}
             />
           </View>
 
@@ -182,8 +186,9 @@ export default function Info2Screen({navigation}: Props) {
               flatListProps={{
                 initialNumToRender: 2,
                 maxToRenderPerBatch: 2,
-                initialScrollIndex: timeData.findIndex(item => item.value === endTime), // 현재 선택된 값으로 스크롤
-                // getItemLayout: (_, index) => ({ length: 50, offset: 50 * index, index }), 
+                initialScrollIndex: timeData.findIndex(
+                  item => item.value === endTime,
+                ), // 현재 선택된 값으로 스크롤
               }}
             />
           </View>
@@ -200,9 +205,17 @@ export default function Info2Screen({navigation}: Props) {
         <TouchableOpacity
           style={styles.nextButton}
           onPress={() =>
-            navigation.navigate('Loading')
-          }
-        >
+            navigation.navigate('Result', {
+              name: route.params.name, // UserInfoScreen에서 전달받은 데이터
+              birthDate: route.params.birthDate,
+              gender: route.params.gender,
+              job: route.params.job,
+              salary,
+              workDays,
+              startTime,
+              endTime,
+            })
+          }>
           <Text style={styles.buttonText}>다음</Text>
         </TouchableOpacity>
       </View>
@@ -343,4 +356,3 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
 });
-

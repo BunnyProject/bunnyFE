@@ -9,7 +9,8 @@ import {
 } from 'react-native';
 import {Dropdown} from 'react-native-element-dropdown';
 import {StackNavigationProp} from '@react-navigation/stack';
-import {RootStackParamList} from '../navigation/MainNavigation';
+import {RootStackParamList} from '../types/types';
+import useCheckNickname from '../hooks/useCheckNickname';
 
 // 네비게이션 타입 설정
 type UserInfoScreenNavigationProp = StackNavigationProp<
@@ -24,9 +25,10 @@ type Props = {
 const UserInfoScreen: React.FC<Props> = ({navigation}) => {
   const [name, setName] = useState<string>('');
   const [birthDate, setBirthDate] = useState<string>('');
-  const [gender, setGender] = useState<string>(''); 
-  const [job, setJob] = useState<string>('학생');  // 기본값은 '학생'
+  const [gender, setGender] = useState<string>('');
+  const [job, setJob] = useState<string>('학생'); // 기본값은 '학생'
   const [isFormValid, setIsFormValid] = useState<boolean>(false);
+  const {error, checkNickname} = useCheckNickname();
 
   // 직업 리스트
   const jobData = [
@@ -38,24 +40,25 @@ const UserInfoScreen: React.FC<Props> = ({navigation}) => {
     {label: '기타', value: '기타'},
   ];
 
-  // 생년월일 validation (YYYY/MM/DD 형식 검사)
-  const isBirthDateValid = (date: string) => {
-    const regex = /^\d{4}\/\d{2}\/\d{2}$/;
-    return regex.test(date);
-  };
+// 생년월일 validation (YYYY-MM-DD 형식 검사)
+const isBirthDateValid = (date: string) => {
+  const regex = /^\d{4}-\d{2}-\d{2}$/;
+  return regex.test(date);
+};
 
-  // 생년월일 포맷팅 함수
-  const formatBirthDate = (date: string) => {
-    // 숫자만 입력 받기
-    const numericDate = date.replace(/[^0-9]/g, '');
-    if (numericDate.length <= 4) {
-      return numericDate; // 4자리 이하일 경우 그대로 반환
-    }
-    if (numericDate.length <= 6) {
-      return `${numericDate.slice(0, 4)}/${numericDate.slice(4, 6)}`;
-    }
-    return `${numericDate.slice(0, 4)}/${numericDate.slice(4, 6)}/${numericDate.slice(6, 8)}`;
-  };
+// 생년월일 포맷팅 함수
+const formatBirthDate = (date: string) => {
+  // 숫자만 입력 받기
+  const numericDate = date.replace(/[^0-9]/g, '');
+  if (numericDate.length <= 4) {
+    return numericDate; // 4자리 이하일 경우 그대로 반환
+  }
+  if (numericDate.length <= 6) {
+    return `${numericDate.slice(0, 4)}-${numericDate.slice(4, 6)}`;
+  }
+  return `${numericDate.slice(0, 4)}-${numericDate.slice(4, 6)}-${numericDate.slice(6, 8)}`;
+};
+
 
   // 입력 유효성 검사
   const validateForm = () => {
@@ -70,6 +73,13 @@ const UserInfoScreen: React.FC<Props> = ({navigation}) => {
   useEffect(() => {
     validateForm();
   }, [name, birthDate, gender, job]);
+
+  const handleNext = async () => {
+    const isAvailable = await checkNickname(name);
+    if (isAvailable) {
+      navigation.navigate('UserInfo2', {name, birthDate, gender, job});
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -91,7 +101,7 @@ const UserInfoScreen: React.FC<Props> = ({navigation}) => {
           keyboardType="default" // 기본 키보드 타입
           maxLength={10} // 최대 글자수 제한 (원하는대로 수정 가능)
         />
-
+        {error && <Text style={styles.errorText}>{error}</Text>}
         <View style={styles.labelContainer}>
           <Text style={styles.label}>생년월일</Text>
           <Text style={styles.star}>*</Text>
@@ -99,11 +109,13 @@ const UserInfoScreen: React.FC<Props> = ({navigation}) => {
         <TextInput
           style={[
             styles.input,
-            isBirthDateValid(birthDate) ? styles.validInput : styles.invalidInput, // 유효성에 따른 border color
+            isBirthDateValid(birthDate)
+              ? styles.validInput
+              : styles.invalidInput, // 유효성에 따른 border color
           ]}
-          placeholder="생년월일 (YYYY/MM/DD)"
+          placeholder="생년월일 (YYYY-MM-DD)"
           value={birthDate}
-          onChangeText={(text) => setBirthDate(formatBirthDate(text))}
+          onChangeText={text => setBirthDate(formatBirthDate(text))}
           keyboardType="number-pad" // 숫자 입력만 가능하도록 설정
           maxLength={10} // YYYY/MM/DD로 10자까지만 입력 허용
         />
@@ -174,15 +186,13 @@ const UserInfoScreen: React.FC<Props> = ({navigation}) => {
 
       {/* 버튼을 하단에 고정, 입력 완료 여부에 따른 색상 변경 */}
       <View style={styles.buttonContainer}>
-        <TouchableOpacity
+      <TouchableOpacity
           style={[
             styles.button,
-            isFormValid ? styles.activeButton : styles.inactiveButton, // 유효성에 따른 버튼 색상
+            isFormValid ? styles.activeButton : styles.inactiveButton,
           ]}
-          onPress={() => {
-            if (isFormValid) navigation.navigate('UserInfo2');
-          }}
-          disabled={!isFormValid} // 유효하지 않으면 버튼 비활성화
+          onPress={handleNext}
+          disabled={!isFormValid}
         >
           <Text style={styles.buttonText}>다음</Text>
         </TouchableOpacity>
@@ -287,6 +297,11 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  errorText: {
+    color: 'red',
+    fontSize: 14,
+    marginTop: 5,
   },
 });
 
