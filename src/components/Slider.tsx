@@ -9,8 +9,8 @@ interface CustomSliderProps {
   unit: string;
   startLabel: string;
   endLabel: string;
-  step: number;  // 단계 수 (예: 주간은 4단계, 월간은 일수에 따라 설정)
-  defaultValue: number; // 초기 슬라이더 값
+  step: number;
+  defaultValue: number;
 }
 
 export default function CustomSlider({
@@ -20,7 +20,6 @@ export default function CustomSlider({
   step,
   defaultValue,
 }: CustomSliderProps) {
-  // 슬라이더의 최대값을 단계 수에 맞게 설정하고, 초기값을 defaultValue로 설정
   const [sliderValue, setSliderValue] = useState(defaultValue);
 
   return (
@@ -47,11 +46,12 @@ export default function CustomSlider({
         <Slider
           style={styles.slider}
           minimumValue={0}
-          maximumValue={step}  // 단계 수에 맞는 최대값 설정
-          step={1}  // 단계별로 슬라이더가 움직이도록 설정
+          maximumValue={step}
+          step={1}
           value={sliderValue}
-          onValueChange={value => setSliderValue(value)}
+          onValueChange={(value) => setSliderValue(value)}
           thumbTintColor="#ffffff"
+          thumbImage={require('../assets/thumb.png')} // 원하는 크기의 이미지 사용
           minimumTrackTintColor="transparent"
           maximumTrackTintColor="transparent"
         />
@@ -60,9 +60,7 @@ export default function CustomSlider({
         <Text style={styles.currentEarnings}>
           {Math.floor((sliderValue / step) * totalGoal).toLocaleString()}원
         </Text>
-        <Text style={styles.totalEarnings}>
-          /{totalGoal.toLocaleString()}원
-        </Text>
+        <Text style={styles.totalEarnings}>/{totalGoal.toLocaleString()}원</Text>
       </View>
     </View>
   );
