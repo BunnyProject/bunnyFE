@@ -12,6 +12,7 @@ export type RootStackParamList = {
   };
   Loading: undefined;
   Result: {
+    userId: number;
     name: string;
     birthDate: string;
     gender: string;
@@ -40,4 +41,50 @@ export type TabBarIconProps = {
 // SavingStackNavigator Props
 export type SavingStackNavigatorProps = {
   isFirstSavingClick: boolean;
+};
+
+// UserData 타입 정의
+export interface UserData {
+  name: string;
+  birth: string;
+  gender: 'FEMALE' | 'MALE';
+  job: '학생' | '직장인' | '프리랜서' | '주부' | '무직' | '기타';
+  monthMoney: number;
+  workDay: string[];
+  workingTime: string; // 수정됨
+  quittingTime: string; // 수정됨
+}
+
+export interface HomeMoneyResponse {
+  resultType: string;
+  success?: {
+    minMoney: number;
+    hourMoney: number;
+    secondMoney: number;
+  };
+  error?: {
+    message: string;
+  };
+}
+
+export interface bunnyResponse {
+  resultType: 'SUCCESS' | 'FAIL';
+  success?: {
+    minMoney: number; // 사용자 ID
+    quttingTime: string;
+  };
+  error?: {
+    message: string;
+  };
+};
+
+export interface CreateUserResponse {
+  resultType: 'SUCCESS' | 'FAIL';
+  success?: {
+    id: number; // 사용자 ID
+    message: string;
+  };
+  error?: {
+    message: string;
+  };
 };
