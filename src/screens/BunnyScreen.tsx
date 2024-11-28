@@ -3,21 +3,25 @@ import {View, Text, StyleSheet, ScrollView} from 'react-native';
 import moment from 'moment-timezone';
 import Svg, {Defs, LinearGradient, Stop, Circle} from 'react-native-svg';
 import CustomSlider from '../components/Slider';
-
 import {useHomeMoney, useTodayBunny} from '../hooks/useTodayBunny';
+
+interface Earnings {
+  total: number;
+  current: number;
+}
 
 export default function BunnyScreen() {
   const { start, end, data, loading, error } = useTodayBunny(); // useTodayBunny 훅 사용
   const { data: homeMoneyData } = useHomeMoney(); // 추가 데이터 훅
-  const totalWeeklyEarnings = 600000; // 이번 주 총 수익 금액
-  const totalMonthlyEarnings = 2400000; // 이번 달 총 수익 금액
-  const totalYearlyEarnings = 28800000; // 올해 총 수익 금액
-
+  const ratePerMinute = data?.minMoney || 280; // 분당 금액 기본값
+  const [weeklyEarnings, setWeeklyEarnings] = useState<Earnings>({ total: 0, current: 0 });
+  const [monthlyEarnings, setMonthlyEarnings] = useState<Earnings>({ total: 0, current: 0 });
+  const [yearlyEarnings, setYearlyEarnings] = useState<Earnings>({ total: 0, current: 0 });
   const [elapsedTime, setElapsedTime] = useState(0);
   const [earnings, setEarnings] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
 
-  const ratePerMinute = data?.minMoney || 280; // 분당 금액 기본값
+  // const ratePerMinute = data?.minMoney || 280;
   const ratePerSecond = homeMoneyData?.secondMoney || 0;
   const ratePerMin = homeMoneyData?.minMoney || 0;
   const ratePerHour = homeMoneyData?.hourMoney || 0;
@@ -27,6 +31,36 @@ export default function BunnyScreen() {
 
     const totalWorkTime = (end.getTime() - start.getTime()) / (1000 * 60); // 분 단위 근무 시간
     const totalEarnings = Math.floor(totalWorkTime * ratePerMinute); // 하루 총 금액 계산
+    const dailyEarnings = Math.floor(totalWorkTime * ratePerMinute); // 하루 총 금액 (소수점 처리)
+
+
+    // 이주의 버니 (5일 기준)
+    const weeklyTotalEarnings = Math.floor(dailyEarnings * 5); // 주 5일 근무
+    const daysInWeek = moment().isoWeekday(); // 현재 주차의 요일 (1=월요일, 7=일요일)
+    const weeklyCurrentEarnings = Math.floor(dailyEarnings * Math.min(daysInWeek, 5)); // 현재 주차 동안의 금액
+    setWeeklyEarnings({
+      total: weeklyTotalEarnings,
+      current: weeklyCurrentEarnings,
+    });
+
+    // 이달의 버니
+    const daysInMonth = moment().daysInMonth(); // 현재 달의 총 일수
+    const monthlyTotalEarnings = Math.floor(dailyEarnings * daysInMonth); // 월 근무 일수 기반
+    const today = moment().date(); // 현재 일자
+    const monthlyCurrentEarnings = Math.floor(dailyEarnings * Math.min(today, daysInMonth)); // 현재까지의 금액
+    setMonthlyEarnings({
+      total: monthlyTotalEarnings,
+      current: monthlyCurrentEarnings,
+    });
+
+    // 올해의 버니
+    const yearlyTotalEarnings = Math.floor(dailyEarnings * 261); // 261일 근무 (52주 * 5일 기준)
+    const daysPassedThisYear = moment().dayOfYear(); // 올해 경과된 일수
+    const yearlyCurrentEarnings = Math.floor(dailyEarnings * daysPassedThisYear); // 현재까지의 금액
+    setYearlyEarnings({
+      total: yearlyTotalEarnings,
+      current: yearlyCurrentEarnings,
+    });
 
     const timer = setInterval(() => {
       const now = moment().tz('Asia/Seoul').toDate();
@@ -45,9 +79,11 @@ export default function BunnyScreen() {
         const remainingSeconds = Math.floor((end.getTime() - now.getTime()) / 1000);
         setTimeLeft(remainingSeconds);
       }
+      
     }, 1000);
 
     return () => clearInterval(timer);
+    
   }, [start, end, ratePerMinute]);
 
   const formatTime = (seconds: number) => {
@@ -150,7 +186,7 @@ export default function BunnyScreen() {
           <Text style={styles.today}>{dayOfWeekStr}</Text>
         </View>
         <CustomSlider
-          totalGoal={totalWeeklyEarnings}
+          totalGoal={weeklyEarnings.total}
           unit="week"
           startLabel="월요일"
           endLabel="금요일"
@@ -163,7 +199,7 @@ export default function BunnyScreen() {
           <Text style={styles.today}>{currentDayOfMonth}일</Text>
         </View>
         <CustomSlider
-          totalGoal={totalMonthlyEarnings}
+          totalGoal={monthlyEarnings.total}
           unit="month"
           startLabel="1일"
           endLabel={`${currentDate.daysInMonth()}일`}
@@ -176,7 +212,7 @@ export default function BunnyScreen() {
           <Text style={styles.today}>{month}월</Text>
         </View>
         <CustomSlider
-          totalGoal={totalYearlyEarnings}
+          totalGoal={yearlyEarnings.total}
           unit="year"
           startLabel="1월"
           endLabel="12월"
