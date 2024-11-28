@@ -7,7 +7,8 @@ import CustomSlider from '../components/Slider';
 import {useHomeMoney, useTodayBunny} from '../hooks/useTodayBunny';
 
 export default function BunnyScreen() {
-  const {data, loading, error} = useTodayBunny();
+  const { start, end, data, loading, error } = useTodayBunny(); // useTodayBunny 훅 사용
+  const { data: homeMoneyData } = useHomeMoney(); // 추가 데이터 훅
   const totalWeeklyEarnings = 600000; // 이번 주 총 수익 금액
   const totalMonthlyEarnings = 2400000; // 이번 달 총 수익 금액
   const totalYearlyEarnings = 28800000; // 올해 총 수익 금액
@@ -16,59 +17,38 @@ export default function BunnyScreen() {
   const [earnings, setEarnings] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
 
-  const ratePerMinute = data?.minMoney || 280; // API 데이터 또는 기본값
-  const quittingTime = data?.quttingTime || '20:00:00'; // API 데이터 또는 기본값
-
-  const startTime = useMemo(() => {
-    return moment
-      .tz('Asia/Seoul')
-      .set({hour: 14, minute: 0, second: 0})
-      .toDate();
-  }, []);
-
-  const endTime = useMemo(() => {
-    const [hour, minute, second] = quittingTime.split(':').map(Number);
-    return moment.tz('Asia/Seoul').set({hour, minute, second}).toDate();
-  }, [quittingTime]);
-
-  const { data: homeMoneyData } = useHomeMoney();
-
+  const ratePerMinute = data?.minMoney || 280; // 분당 금액 기본값
   const ratePerSecond = homeMoneyData?.secondMoney || 0;
   const ratePerMin = homeMoneyData?.minMoney || 0;
   const ratePerHour = homeMoneyData?.hourMoney || 0;
-
+  
   useEffect(() => {
-    if (loading || error) return;
+    if (!start || !end) return;
+
+    const totalWorkTime = (end.getTime() - start.getTime()) / (1000 * 60); // 분 단위 근무 시간
+    const totalEarnings = Math.floor(totalWorkTime * ratePerMinute); // 하루 총 금액 계산
 
     const timer = setInterval(() => {
       const now = moment().tz('Asia/Seoul').toDate();
-      if (now > endTime) {
+
+      if (now > end) {
         clearInterval(timer);
-        setElapsedTime((endTime.getTime() - startTime.getTime()) / 1000);
+        setEarnings(totalEarnings); // 하루 총 금액으로 설정
         setTimeLeft(0);
-      } else if (now < startTime) {
-        setElapsedTime(0);
-        setTimeLeft((endTime.getTime() - startTime.getTime()) / 1000);
+      } else if (now < start) {
+        setEarnings(0);
+        setTimeLeft(totalWorkTime * 60); // 남은 시간 설정
       } else {
-        const elapsedSeconds = Math.floor(
-          (now.getTime() - startTime.getTime()) / 1000,
-        );
-        setElapsedTime(elapsedSeconds);
-
-        const currentEarnings = Math.floor(
-          (elapsedSeconds / 60) * ratePerMinute,
-        );
+        const elapsedMinutes = Math.floor((now.getTime() - start.getTime()) / (1000 * 60));
+        const currentEarnings = Math.floor(elapsedMinutes * ratePerMinute);
         setEarnings(currentEarnings);
-
-        const remainingSeconds = Math.floor(
-          (endTime.getTime() - now.getTime()) / 1000,
-        );
+        const remainingSeconds = Math.floor((end.getTime() - now.getTime()) / 1000);
         setTimeLeft(remainingSeconds);
       }
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [startTime, endTime, ratePerMinute, loading, error]);
+  }, [start, end, ratePerMinute]);
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -82,7 +62,7 @@ export default function BunnyScreen() {
   }
 
   const currentDate = moment().tz('Asia/Seoul');
-  const currentDayOfMonth = moment().tz('Asia/Seoul').date();
+  const currentDayOfMonth = currentDate.date();
   const month = currentDate.month() + 1;
   const currentDayOfWeek = currentDate.isoWeekday() - 1;
   const dayOfWeekStr = currentDate.format('dddd');
@@ -93,7 +73,7 @@ export default function BunnyScreen() {
     timeLeft <= 0 ? formatTime(0) : formatTime(timeLeft);
 
   const progress =
-    elapsedTime / ((endTime.getTime() - startTime.getTime()) / 1000);
+    start && end ? elapsedTime / ((end.getTime() - start.getTime()) / 1000) : 0;
 
   return (
     <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -108,7 +88,8 @@ export default function BunnyScreen() {
           width={200}
           height={200}
           viewBox="0 0 200 200"
-          style={{transform: [{rotate: '-90deg'}]}}>
+          style={{ transform: [{ rotate: '-90deg' }] }}
+        >
           <Defs>
             <LinearGradient id="grad" x1="0" y1="0" x2="1" y2="0">
               <Stop offset="0%" stopColor="#DECDFF" />
@@ -148,7 +129,8 @@ export default function BunnyScreen() {
           {['초당', '분당', '시간당'].map((label, index) => (
             <View
               style={[styles.bottomItems, index < 2 && styles.bottomBorder]}
-              key={index}>
+              key={index}
+            >
               <Text style={styles.bottomlabel}>{label}</Text>
               <Text style={styles.bottomItem}>
                 {index === 0
@@ -225,7 +207,9 @@ const styles = StyleSheet.create({
   },
   today: {
     fontSize: 14,
-    color: '#aaa',
+    color: 'black',
+    marginBottom: 1,
+    marginLeft: 7,
   },
   circleContainer: {
     justifyContent: 'center',

@@ -71,6 +71,7 @@ export interface bunnyResponse {
   resultType: 'SUCCESS' | 'FAIL';
   success?: {
     minMoney: number; // 사용자 ID
+    workingTime: string;
     quttingTime: string;
   };
   error?: {

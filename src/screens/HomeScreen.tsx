@@ -7,7 +7,7 @@ import SavingsModal from '../components/SavingModal';
 import { useTodayBunny } from '../hooks/useTodayBunny';
 
 export default function HomeScreen() {
-  const { data, loading, error } = useTodayBunny();
+  const { start, end, data, loading, error } = useTodayBunny(); // 수정된 훅 사용
   const [elapsedTime, setElapsedTime] = useState(0);
   const [earnings, setEarnings] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
@@ -15,50 +15,35 @@ export default function HomeScreen() {
   const [monthlyGoal, setMonthlyGoal] = useState(250000);
 
   const ratePerMinute = data?.minMoney || 0;
-  const quittingTime = data?.quttingTime || '00:00:00';
-  const todayEarnings = ratePerMinute * 60 * 8; //분당금액 * 60분 * 근무시간ㄷ
-
-  const startTime = useMemo(() => {
-    if (quittingTime !== '00:00:00') {
-      return moment
-        .tz('Asia/Seoul')
-        .set({ hour: 9, minute: 0, second: 0 })
-        .toDate();
-    } else {
-      return moment
-        .tz('Asia/Seoul')
-        .set({ hour: 0, minute: 0, second: 0 })
-        .toDate();
-    }
-  }, [quittingTime]);
-  
-
-  const endTime = useMemo(() => {
-    const [hour, minute, second] = quittingTime.split(':').map(Number);
-    return moment.tz('Asia/Seoul').set({ hour, minute, second }).toDate();
-  }, [quittingTime]);
+  const todayEarnings = ratePerMinute * 60 * 8;
 
   useEffect(() => {
+    if (!start || !end) return;
+
+    const totalWorkTime = (end.getTime() - start.getTime()) / (1000 * 60); // 분 단위 근무 시간
+    const totalEarnings = Math.floor(totalWorkTime * ratePerMinute); // 하루 총 금액 계산
+
     const timer = setInterval(() => {
       const now = moment().tz('Asia/Seoul').toDate();
 
-      if (now > endTime) {
+      if (now > end) {
         clearInterval(timer);
-        setElapsedTime((endTime.getTime() - startTime.getTime()) / 1000);
+        setEarnings(totalEarnings);
         setTimeLeft(0);
-      } else if (now < startTime) {
-        setElapsedTime(0);
-        setTimeLeft((endTime.getTime() - startTime.getTime()) / 1000);
+      } else if (now < start) {
+        setEarnings(0);
+        setTimeLeft(totalWorkTime * 60); // 남은 시간 설정
       } else {
-        const elapsedSeconds = Math.floor((now.getTime() - startTime.getTime()) / 1000);
-        setElapsedTime(elapsedSeconds);
-        setEarnings(Math.floor((elapsedSeconds / 60) * ratePerMinute));
-        setTimeLeft(Math.floor((endTime.getTime() - now.getTime()) / 1000));
+        const elapsedMinutes = Math.floor((now.getTime() - start.getTime()) / (1000 * 60));
+        const currentEarnings = Math.floor(elapsedMinutes * ratePerMinute);
+        setEarnings(currentEarnings);
+        const remainingSeconds = Math.floor((end.getTime() - now.getTime()) / 1000);
+        setTimeLeft(remainingSeconds);
       }
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [startTime, endTime, ratePerMinute]);
+  }, [start, end, ratePerMinute]);
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -72,7 +57,7 @@ export default function HomeScreen() {
   }
 
   const currentDate = moment().tz('Asia/Seoul');
-  const currentDayOfMonth = moment().tz('Asia/Seoul').date();
+  const currentDayOfMonth = currentDate.date();
   const month = currentDate.month() + 1;
   const dayOfWeekStr = currentDate.format('dddd');
 
@@ -83,7 +68,7 @@ export default function HomeScreen() {
     timeLeft <= 0 ? formatTime(0) : formatTime(timeLeft);
 
   const progress =
-    elapsedTime / ((endTime.getTime() - startTime.getTime()) / 1000);
+    start && end ? elapsedTime / ((end.getTime() - start.getTime()) / 1000) : 0;
 
   const toggleModal = () => {
     setIsModalVisible(!isModalVisible);
@@ -136,7 +121,7 @@ export default function HomeScreen() {
           </Text>
         </View>
         <View style={styles.earnings}>
-          {error === '급여를 찾을 수 없어요' ? (
+          {error ? (
             <Text style={styles.earningsText}>급여 정보를 찾을 수 없습니다.</Text>
           ) : (
             <Text style={styles.earningsText}>{earnings.toLocaleString()}원</Text>
@@ -195,7 +180,6 @@ export default function HomeScreen() {
   );
 }
 
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -217,7 +201,8 @@ const styles = StyleSheet.create({
   today: {
     fontSize: 14,
     color: 'black',
-    marginBottom: 10,
+    marginBottom: 6,
+    marginLeft: -2,
   },
   circleContainer: {
     justifyContent: 'center',
@@ -225,7 +210,7 @@ const styles = StyleSheet.create({
     marginBottom: 40,
     borderRadius: 15,
     backgroundColor: '#fcfcfc',
-    padding: 30,
+    padding: 33,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.2,
