@@ -10,7 +10,7 @@ const apiEndpoints = {
       getTodayBunny: '/bunny', // 오늘의 버니 조회
       updateMonthlyTarget: '/bunny', // 한달 목표 수정
       createMonthlyTarget: '/bunny/target', // 한달 목표 설정
-      getHomeSalary: '/bunny/homeMoney', // 홈 화면 급여 조회
+      getHomeSalary: '/bunny/home-money', // 홈 화면 급여 조회
       deleteMonthlyTarget: (targetId: string | number) => `/bunny/${targetId}`, // 한달 목표 삭제
     },
     save: {

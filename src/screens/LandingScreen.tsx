@@ -15,28 +15,35 @@ type Props = {
 };
 
 const LandingScreen: React.FC<Props> = ({ navigation }) => {
-  const [isLoading, setIsLoading] = useState(true); // 로딩 상태 추가
-
+  const [isLoading, setIsLoading] = useState(true); // 로딩 상태
+  const [isUserCreated, setIsUserCreated] = useState<boolean | null>(null); // 사용자 생성 여부
+  const logStoredData = async () => {
+    try {
+      // await AsyncStorage.removeItem('isUserCreated');
+      const keys = await AsyncStorage.getAllKeys(); // 모든 키 가져오기
+      const data = await AsyncStorage.multiGet(keys); // 모든 키의 값 가져오기
+      console.log('AsyncStorage Data:', data); // 콘솔에 출력
+    } catch (e) {
+      console.error('Failed to load AsyncStorage data', e);
+    }
+  };
+  
   useEffect(() => {
+    logStoredData();
     const checkUserState = async () => {
       try {
-        const isUserCreated = await AsyncStorage.getItem('isUserCreated');
-        if (isUserCreated === 'true') {
-          const userName = await AsyncStorage.getItem('userName'); // 사용자 이름 불러오기
-          const userId = await AsyncStorage.getItem('userId'); // 사용자 번호 불러오기
-          console.log(`Welcome back, ${userName}! Your ID is ${userId}.`);
-          setTimeout(() => navigation.replace('Home'), 2000);
-        } else {
-          setTimeout(() => navigation.replace('UserInfo'), 2000);
-        }
+        const userCreated = await AsyncStorage.getItem('isUserCreated');
+        setIsUserCreated(userCreated === 'true');
       } catch (e) {
         console.error('Failed to check user state:', e);
-        setTimeout(() => navigation.replace('UserInfo'), 2000);
+        setIsUserCreated(false); // 에러 발생 시 기본값으로 이동
+      } finally {
+        setIsLoading(false); // 로딩 종료
       }
     };
-  
+
     checkUserState();
-  }, [navigation]);
+  }, []);
 
   // 로딩 중에는 로딩 상태 표시
   if (isLoading) {
@@ -46,6 +53,14 @@ const LandingScreen: React.FC<Props> = ({ navigation }) => {
       </View>
     );
   }
+
+  const handleStart = () => {
+    if (isUserCreated) {
+      navigation.replace('Home');
+    } else {
+      navigation.replace('UserInfo');
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -57,9 +72,7 @@ const LandingScreen: React.FC<Props> = ({ navigation }) => {
       <Text style={styles.subtitle}>
         버니와 함께 지금 벌고 있는 돈을 {'\n'} 확인해 볼까요?
       </Text>
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => navigation.navigate('UserInfo')}>
+      <TouchableOpacity style={styles.button} onPress={handleStart}>
         <Text style={styles.buttonText}>시작하기</Text>
       </TouchableOpacity>
     </View>
