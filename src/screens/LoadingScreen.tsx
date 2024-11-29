@@ -2,6 +2,7 @@ import React, {useEffect, useRef} from 'react';
 import {View, Image, Text, StyleSheet, Animated} from 'react-native';
 import {StackNavigationProp} from '@react-navigation/stack';
 import {RootStackParamList} from '../navigation/MainNavigation';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type LoadingScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -13,6 +14,19 @@ type Props = {
 };
 
 const LoadingScreen = ({navigation}: Props) => {
+  useEffect(() => {
+    const checkSelectedIcons = async () => {
+      const savedIcons = await AsyncStorage.getItem('selectedIcons');
+      if (savedIcons) {
+        navigation.replace('Akki'); // 저장된 데이터가 있으면 바로 AkkiScreen으로 이동
+      } else {
+        navigation.replace('IconSelectScreen'); // 없으면 IconSelection으로 이동
+      }
+    };
+
+    checkSelectedIcons();
+  }, [navigation]);
+
   const fadeValue1 = useRef(new Animated.Value(0)).current;
   const fadeValue2 = useRef(new Animated.Value(0)).current;
   const fadeValue3 = useRef(new Animated.Value(0)).current;

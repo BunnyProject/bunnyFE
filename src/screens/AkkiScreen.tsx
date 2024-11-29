@@ -1,4 +1,4 @@
-import React, {useRef, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   Animated,
   ScrollView,
@@ -14,6 +14,8 @@ import {useRoute, RouteProp} from '@react-navigation/native';
 import {Easing} from 'react-native';
 import CalendarComponent from '../components/CalendarComponent';
 import AkkiBottomSheet from '../components/AkkiBottomSheet';
+import { iconData } from './IconSelectScreen';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type RootStackParamList = {
   AkkiScreen: {
@@ -28,20 +30,44 @@ const carrotImage = require('../assets/Carrot.png');
 
 const AkkiScreen = () => {
   const route = useRoute<RouteProp<RootStackParamList, 'AkkiScreen'>>();
+  const [category1, setCategory1] = useState<Category | null>(null);
+  const [category2, setCategory2] = useState<Category | null>(null);  
   const {selectedIcons} = route.params || {selectedIcons: []};
   const [selectedDate, setSelectedDate] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<{
-    name: string;
-    source: any;
-    color: string;
-  } | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [inputAmount, setInputAmount] = useState('');
   const [isBottomSheetVisible, setBottomSheetVisible] = useState(false);
 
   const bunnyBounceAnim = useRef(new Animated.Value(0)).current;
-  const [accumulatedCarrots, setAccumulatedCarrots] = useState([]);
+  const [accumulatedCarrots, setAccumulatedCarrots] = useState<Carrot[]>([]);
+  const [savings, setSavings] = useState<Record<string, number>>({ 기타: 0 });
+
   const DEFAULT_COLOR = '#DECDFF';
+  const CATEGORY1_COLOR = '#98A2FF';
+  const CATEGORY2_COLOR = '#ACD7FF';
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const savedIcons = await AsyncStorage.getItem('selectedIcons');
+      if (savedIcons) {
+        const { firstCategory, secondCategory } = JSON.parse(savedIcons);
+        const category1Data = iconData.find(icon => icon.name === firstCategory);
+        const category2Data = iconData.find(icon => icon.name === secondCategory);
+
+        setCategory1({ ...category1Data, color: CATEGORY1_COLOR });
+        setCategory2({ ...category2Data, color: CATEGORY2_COLOR });
+
+        setSavings(prev => ({
+          ...prev,
+          [firstCategory]: 0,
+          [secondCategory]: 0,
+        }));
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   const handleCategoryPress = (icon: Category) => {
     setSelectedCategory(icon);
@@ -83,19 +109,15 @@ const AkkiScreen = () => {
   // 모달 완료 버튼 클릭 시 처리
   const handleComplete = () => {
     if (selectedCategory && inputAmount) {
-      setSavings(prevSavings => ({
-        ...prevSavings,
-        [selectedCategory.name]:
-          prevSavings[selectedCategory.name] + parseInt(inputAmount, 10),
+      setSavings(prev => ({
+        ...prev,
+        [selectedCategory.name]: prev[selectedCategory.name] + parseInt(inputAmount, 10),
       }));
-      setModalVisible(false); // 모달 닫기
+      setModalVisible(false);
       setInputAmount('');
-
-      // "완료" 버튼을 눌렀을 때만 당근 추가
-      addAccumulatedCarrot();
     }
   };
-
+  
   const handleOpenBottomSheet = () => {
     setBottomSheetVisible(true);
   };
@@ -147,17 +169,6 @@ const AkkiScreen = () => {
     },
   ];
 
-  const initialSavings: Record<string, number> = selectedIcons.reduce(
-    (acc, icon) => {
-      acc[icon.name] = 0;
-      return acc;
-    },
-    {기타: 0},
-  );
-
-  const [savings, setSavings] =
-    useState<Record<string, number>>(initialSavings);
-
   // 날짜 선택 시 처리
   const handleSelectDate = (date: string) => {
     setSelectedDate(date);
@@ -188,27 +199,32 @@ const AkkiScreen = () => {
       </View>
       {/* 선택된 아이콘과 기타 버튼을 표시하는 카테고리 버튼 */}
       <View style={styles.categoryContainer}>
-        {selectedIcons.map(icon => (
+      {category1 && (
           <TouchableOpacity
-            key={icon.name}
-            style={styles.category}
-            onPress={() => handleCategoryPress(icon)}>
-            <Image source={icon.source} style={styles.iconImage} />
-            <Text style={styles.iconText}>{icon.name}</Text>
+            style={[styles.category]}
+            onPress={() => handleCategoryPress(category1)}>
+            <Image source={category1.source} style={styles.iconImage} />
+            <Text style={styles.iconText}>{category1.name}</Text>
           </TouchableOpacity>
-        ))}
+        )}
+        {category2 && (
+          <TouchableOpacity
+            style={[styles.category]}
+            onPress={() => handleCategoryPress(category2)}>
+            <Image source={category2.source} style={styles.iconImage} />
+            <Text style={styles.iconText}>{category2.name}</Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
-          style={styles.category}
+          style={[styles.category]}
           onPress={() =>
             handleCategoryPress({
               name: '기타',
               source: require('../assets/icons/plus.png'),
+              color: DEFAULT_COLOR,
             })
           }>
-          <Image
-            source={require('../assets/icons/plus.png')}
-            style={styles.iconImage}
-          />
+          <Image source={require('../assets/icons/plus.png')} style={styles.iconImage} />
           <Text style={styles.iconText}>기타</Text>
         </TouchableOpacity>
       </View>
@@ -225,25 +241,21 @@ const AkkiScreen = () => {
           </Text>
         </View>
         {/* 선택된 카테고리들을 표시하고 기타를 항상 마지막에 표시 */}
-        {selectedIcons.map(icon => (
-          <View style={styles.savingDetails} key={icon.name}>
-            <View style={styles.iconWithDots}>
-              <Text>{icon.name}</Text>
-              <View style={[styles.dot, {backgroundColor: icon.color}]} />
-            </View>
-            <Text style={styles.amountText}>
-              {savings[icon.name]?.toLocaleString() || '0'}원
-            </Text>
+        {category1 && (
+          <View style={styles.savingDetails}>
+            <Text>{category1.name}</Text>
+            <Text>{savings[category1.name]?.toLocaleString() || '0'}원</Text>
           </View>
-        ))}
+        )}
+        {category2 && (
+          <View style={styles.savingDetails}>
+            <Text>{category2.name}</Text>
+            <Text>{savings[category2.name]?.toLocaleString() || '0'}원</Text>
+          </View>
+        )}
         <View style={styles.savingDetails}>
-          <View style={styles.iconWithDots}>
-            <Text>기타</Text>
-            <View style={[styles.dot, {backgroundColor: DEFAULT_COLOR}]} />
-          </View>
-          <Text style={styles.amountText}>
-            {savings['기타'].toLocaleString()}원
-          </Text>
+          <Text>기타</Text>
+          <Text>{savings['기타'].toLocaleString()}원</Text>
         </View>
       </View>
       <Modal visible={modalVisible} transparent={true} animationType="slide">
