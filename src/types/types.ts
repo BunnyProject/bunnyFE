@@ -26,9 +26,11 @@ export type RootStackParamList = {
   Home: undefined;
   Bunny: undefined;
   Akki: undefined;
+  AkkiScreen: undefined;
   IconSelectScreen: undefined;
   AkkiStartScreen: undefined;
   MoreScreen: undefined;
+  Saving: undefined;
 };
 
 // TabBarIcon Props

@@ -16,6 +16,7 @@ import AkkiStartScreen from '../screens/AkkiStartScreen';
 import MoreScreen from '../screens/MoreScreen';
 import Header from '../components/Header';
 import {RootStackParamList} from '../types/types';
+import InitialScreen from '../screens/InitialScreen';
 
 // 이미지 경로 불러오기
 const bunnyIcon = require('../assets/bunny.png');
@@ -24,40 +25,6 @@ const homeIcon = require('../assets/Home.png');
 
 const Stack = createStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
-const SavingStack = createStackNavigator();
-
-// SavingStackNavigator
-const SavingStackNavigator = () => {
-  const [isFirstSavingClick, setIsFirstSavingClick] = useState(true);
-  const navigation = useNavigation();
-
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', () => {
-      if (isFirstSavingClick) {
-        setIsFirstSavingClick(false);
-      }
-    });
-    return unsubscribe;
-  }, [navigation, isFirstSavingClick]);
-
-  return (
-    <SavingStack.Navigator>
-      {isFirstSavingClick ? (
-        <SavingStack.Screen
-          name="AkkiStartScreen"
-          component={AkkiStartScreen}
-          options={{headerShown: false}}
-        />
-      ) : (
-        <SavingStack.Screen
-          name="AkkiScreen"
-          component={AkkiScreen}
-          options={{headerShown: false}}
-        />
-      )}
-    </SavingStack.Navigator>
-  );
-};
 
 // TabBarIcon 컴포넌트 정의
 const TabBarIcon = ({
@@ -91,6 +58,20 @@ const TabBarIcon = ({
     />
   );
 };
+
+const SavingStackNavigator = () => {
+  const SavingStack = createStackNavigator();
+
+  return (
+    <SavingStack.Navigator screenOptions={{ headerShown: false }}>
+      <SavingStack.Screen name="InitialScreen" component={InitialScreen} />
+      <SavingStack.Screen name="AkkiStartScreen" component={AkkiStartScreen} />
+      <SavingStack.Screen name="IconSelectScreen" component={IconSelectScreen} />
+      <SavingStack.Screen name="Akki" component={AkkiScreen} />
+    </SavingStack.Navigator>
+  );
+};
+
 
 // HomeTabNavigator 수정
 const HomeTabNavigator = () => {
@@ -174,30 +155,6 @@ const MainNavigator: React.FC = () => {
         }}
       />
       <Stack.Screen
-        name="IconSelectScreen"
-        component={IconSelectScreen}
-        options={{
-          header: HeaderWrapper,
-          headerTitle: '',
-        }}
-      />
-      <Stack.Screen
-        name="Akki"
-        component={AkkiScreen}
-        options={{
-          header: HeaderWrapper,
-          headerTitle: '',
-        }}
-      />
-      <Stack.Screen
-        name="AkkiStartScreen"
-        component={AkkiStartScreen}
-        options={{
-          header: HeaderWrapper,
-          headerTitle: '',
-        }}
-      />
-      <Stack.Screen
         name="MoreScreen"
         component={MoreScreen}
         options={{
@@ -208,5 +165,6 @@ const MainNavigator: React.FC = () => {
     </Stack.Navigator>
   );
 };
+
 
 export default MainNavigator;
