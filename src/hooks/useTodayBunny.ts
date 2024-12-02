@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
+import {useState, useEffect, useMemo} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getHomeSalary, getTodayBunny } from '../api/bunnyApi'; // 기존 API 호출 함수 import
-import { bunnyResponse, HomeMoneyResponse } from '../types/types';
+import {getHomeSalary, getTodayBunny} from '../api/bunnyApi'; // 기존 API 호출 함수 import
+import {bunnyResponse, HomeMoneyResponse} from '../types/types';
 import moment from 'moment-timezone';
 
 // const response: bunnyResponse = await getTodayBunny(Number(userId));
@@ -12,20 +12,16 @@ export const useTodayBunny = () => {
   const [error, setError] = useState<string | null>(null);
 
   const start = useMemo(() => {
-    if (!data || !data.workingTime) return null;
-
-    // workingTime 문자열을 Date 객체로 변환
-    const [hour, minute, second] = data.workingTime.split(':').map(Number);
+    const workingTime = data?.workingTime || '09:00:00';
+    const [hour, minute, second] = workingTime.split(':').map(Number);
     return moment.tz('Asia/Seoul').set({ hour, minute, second }).toDate();
   }, [data]);
-
+  
   const end = useMemo(() => {
-    if (!data || !data.quttingTime) return null;
-
-    // quttingTime 문자열을 Date 객체로 변환
-    const [hour, minute, second] = data.quttingTime.split(':').map(Number);
+    const quittingTime = data?.quttingTime || '18:00:00';
+    const [hour, minute, second] = quittingTime.split(':').map(Number);
     return moment.tz('Asia/Seoul').set({ hour, minute, second }).toDate();
-  }, [data]);
+  }, [data]);  
 
   useEffect(() => {
     const fetchData = async () => {
@@ -34,12 +30,11 @@ export const useTodayBunny = () => {
         const userId = await AsyncStorage.getItem('userId');
         if (!userId) throw new Error('User ID not found in storage');
 
-        // const response: bunnyResponse = await getTodayBunny(Number(userId));
-        const response: bunnyResponse = await getTodayBunny(1);
+        const response: bunnyResponse = await getTodayBunny(Number(userId));
         if (response.resultType === 'SUCCESS' && response.success) {
-          setData(response.success); // 성공 데이터 저장
+          setData(response.success);
         } else if (response.error) {
-          setError(response.error.message); // 실패 메시지 저장
+          setError(response.error.message);
         }
       } catch (err: any) {
         setError(err.message || 'Failed to fetch data');
@@ -51,7 +46,19 @@ export const useTodayBunny = () => {
     fetchData();
   }, []);
 
-  return { data, start, end, loading, error };
+  const defaultData = {
+    minMoney: 100,
+    workingTime: '09:00:00',
+    quttingTime: '18:00:00',
+  };
+
+  return {
+    data: data || defaultData,
+    start,
+    end,
+    loading,
+    error: error || null,
+  };
 };
 
 export const useHomeMoney = () => {
@@ -63,7 +70,7 @@ export const useHomeMoney = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const userId = await AsyncStorage.getItem('userId'); // AsyncStorage에서 userId 가져오기
+        const userId = await AsyncStorage.getItem('userId');
         if (!userId) throw new Error('User ID not found in storage');
 
         const response = await getHomeSalary(Number(userId));
@@ -82,5 +89,15 @@ export const useHomeMoney = () => {
     fetchData();
   }, []);
 
-  return { data, loading, error };
+  const defaultData = {
+    minMoney: 164,
+    hourMoney: 9860,
+    secondMoney: 3,
+  };
+
+  return {
+    data: data || defaultData,
+    loading,
+    error: error || null,
+  };
 };

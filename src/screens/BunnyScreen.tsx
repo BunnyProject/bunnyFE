@@ -64,26 +64,22 @@ export default function BunnyScreen() {
 
     const timer = setInterval(() => {
       const now = moment().tz('Asia/Seoul').toDate();
-
       if (now > end) {
         clearInterval(timer);
-        setEarnings(totalEarnings); // 하루 총 금액으로 설정
+        setElapsedTime((end.getTime() - start.getTime()) / 1000);
         setTimeLeft(0);
       } else if (now < start) {
-        setEarnings(0);
-        setTimeLeft(totalWorkTime * 60); // 남은 시간 설정
+        setElapsedTime(0);
+        setTimeLeft((end.getTime() - start.getTime()) / 1000);
       } else {
-        const elapsedMinutes = Math.floor((now.getTime() - start.getTime()) / (1000 * 60));
-        const currentEarnings = Math.floor(elapsedMinutes * ratePerMinute);
-        setEarnings(currentEarnings);
-        const remainingSeconds = Math.floor((end.getTime() - now.getTime()) / 1000);
-        setTimeLeft(remainingSeconds);
+        const elapsedSeconds = Math.floor((now.getTime() - start.getTime()) / 1000);
+        setElapsedTime(elapsedSeconds);
+        setEarnings(Math.floor((elapsedSeconds / 60) * ratePerMinute));
+        setTimeLeft(Math.floor((end.getTime() - now.getTime()) / 1000));
       }
-      
     }, 1000);
-
+  
     return () => clearInterval(timer);
-    
   }, [start, end, ratePerMinute]);
 
   const formatTime = (seconds: number) => {
@@ -103,8 +99,8 @@ export default function BunnyScreen() {
   const currentDayOfWeek = currentDate.isoWeekday() - 1;
   const dayOfWeekStr = currentDate.format('dddd');
 
-  const formattedElapsedTime =
-    elapsedTime >= 8 * 3600 ? formatTime(8 * 3600) : formatTime(elapsedTime);
+  const formattedElapsedTime = formatTime(elapsedTime);
+
   const formattedTimeLeft =
     timeLeft <= 0 ? formatTime(0) : formatTime(timeLeft);
 
