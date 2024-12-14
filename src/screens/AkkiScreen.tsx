@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {
   Animated,
   ScrollView,
@@ -15,9 +15,10 @@ import CalendarComponent from '../components/CalendarComponent';
 import AkkiBottomSheet from '../components/AkkiBottomSheet';
 import {iconData} from './IconSelectScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {RootStackParamList} from '../types/types';
+import {MarkedDates, MonthlySaving, RootStackParamList} from '../types/types';
 import {useSaveMoney} from '../hooks/useSaveMoney';
 import {useTodaySaving} from '../hooks/useTodaySaving';
+import {useMonthlySavings} from '../hooks/useMonthlySavings';
 
 type Carrot = {id: number; fallAnim: Animated.Value; position: number};
 type Category = {name: string; source: any; color?: string};
@@ -30,28 +31,48 @@ const getMemberNo = async (): Promise<number | null> => {
   return userId ? Number(userId) : null;
 };
 
+const getMonthStartAndEndDates = (): {start: string; end: string} => {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), 1); // 월의 시작일
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0); // 월의 마지막 일
+  return {
+    start: start.toISOString().split('T')[0],
+    end: end.toISOString().split('T')[0],
+  };
+};
+
 const AkkiScreen = () => {
   const route = useRoute<RouteProp<RootStackParamList, 'Akki'>>();
-  const [category1, setCategory1] = useState<Category | null>(null);
-  const [category2, setCategory2] = useState<Category | null>(null);
-  const [category3, setCategory3] = useState<Category | null>(null);
-  const [detail, setDetail] = useState(''); // Detail input state
-  const {selectedIcons} = route.params || {selectedIcons: []};
-  const [selectedDate, setSelectedDate] = useState('');
+  // const { selectedIcons } = route.params || { selectedIcons: [] };
+  const bunnyBounceAnim = useRef(new Animated.Value(0)).current;
+  const [selectedDate, setSelectedDate] = useState<string>('');
+  const [category1, setCategory1] = useState<any>(null);
+  const [category2, setCategory2] = useState<any>(null);
+  const [category3, setCategory3] = useState<any>(null);
+  const [selectedCategory, setSelectedCategory] = useState<any>(null);
   const [modalVisible, setModalVisible] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(
-    null,
-  );
   const [inputAmount, setInputAmount] = useState('');
   const [isBottomSheetVisible, setBottomSheetVisible] = useState(false);
+  const [detail, setDetail] = useState('');
   const [memberNo, setMemberNo] = useState<number | null>(null);
-
-  const bunnyBounceAnim = useRef(new Animated.Value(0)).current;
   const [accumulatedCarrots, setAccumulatedCarrots] = useState<Carrot[]>([]);
-  const [savings, setSavings] = useState<Record<string, number>>({기타: 0});
 
+  const {start: startInclusive, end: endInclusive} = getMonthStartAndEndDates();
+  const {
+    savings,
+    markedDates,
+    loading: monthlyLoading,
+    error,
+  } = useMonthlySavings(
+    memberNo || 0,
+    startInclusive,
+    endInclusive,
+    category1?.name || '',
+    category2?.name || '',
+    category3?.name || '',
+  );
+  const {todaySaving, loading, refetch} = useTodaySaving(memberNo || 0);
   const {saveMoney} = useSaveMoney();
-  const {todaySaving, loading, error, refetch} = useTodaySaving(memberNo || 0);
 
   const DEFAULT_COLOR = '#DECDFF';
   const CATEGORY1_COLOR = '#98A2FF';
@@ -116,18 +137,50 @@ const AkkiScreen = () => {
             color: DEFAULT_COLOR,
           });
         }
-
-        setSavings(prev => ({
-          ...prev,
-          [firstCategory]: 0,
-          [secondCategory]: 0,
-          [otherCategoryName]: 0,
-        }));
       }
     };
 
     fetchCategories();
   }, []);
+
+  const getCategoryColor = useCallback(
+    (categoryName: string): string => {
+      if (category1 && categoryName === category1.name) {
+        return CATEGORY1_COLOR;
+      } else if (category2 && categoryName === category2.name) {
+        return CATEGORY2_COLOR;
+      } else if (category3 && categoryName === category3.name) {
+        return DEFAULT_COLOR;
+      }
+      return '#D3D3D3'; // 기본 색상 (기타)
+    },
+    [category1, category2, category3],
+  );
+
+  useEffect(() => {
+    if (!monthlyLoading && savings) {
+      const newMarkedDates: MarkedDates = {}; // 새로 생성된 markedDates
+
+      savings.forEach((saving: MonthlySaving) => {
+        const date = saving.savingDay;
+
+        if (!newMarkedDates[date]) {
+          newMarkedDates[date] = {
+            marked: true,
+            dots: [],
+          };
+        }
+
+        newMarkedDates[date].dots!.push({
+          key: `${saving.savingId}`,
+          color: getCategoryColor(saving.categoryName),
+        });
+      });
+
+      // 기존 setMarkedDates 호출 제거
+      // markedDates는 useMonthlySavings에서 반환되므로 별도로 업데이트하지 않습니다.
+    }
+  }, [savings, monthlyLoading, getCategoryColor]);
 
   const handleCategoryPress = (icon: Category) => {
     setSelectedCategory(icon);
@@ -193,49 +246,6 @@ const AkkiScreen = () => {
     setBottomSheetVisible(false);
   };
 
-  const testData = [
-    {
-      name: '술',
-      source: require('../assets/icons/alcohol.png'),
-      amount: 4500,
-      time: '2024-10-01T09:30:00',
-      id: '1',
-      color: '#98A2FF',
-    },
-    {
-      name: '쇼핑',
-      source: require('../assets/icons/shopping.png'),
-      amount: 12000,
-      time: '2024-10-01T11:00:00',
-      id: '2',
-      color: '#ACD7FF',
-    },
-    {
-      name: '기타',
-      source: require('../assets/icons/plus.png'),
-      amount: 5000,
-      time: '2024-10-02T15:00:00',
-      id: '3',
-      color: DEFAULT_COLOR,
-    },
-    {
-      name: '술',
-      source: require('../assets/icons/alcohol.png'),
-      amount: 3200,
-      time: '2024-10-02T20:30:00',
-      id: '4',
-      color: '#98A2FF',
-    },
-    {
-      name: '쇼핑',
-      source: require('../assets/icons/shopping.png'),
-      amount: 6500,
-      time: '2024-10-03T18:45:00',
-      id: '6',
-      color: '#ACD7FF',
-    },
-  ];
-
   // 날짜 선택 시 처리
   const handleSelectDate = (date: string) => {
     setSelectedDate(date);
@@ -294,30 +304,24 @@ const AkkiScreen = () => {
       <View style={styles.savingSummary}>
         <View style={styles.titleContainer}>
           <Text style={styles.savingTitle}>오늘의 아끼기</Text>
-          {loading ? (
-            <Text style={styles.loadingText}>로딩 중...</Text>
-          ) : error ? (
-            <Text style={styles.errorText}>오류 발생: {error}</Text>
-          ) : (
-            <Text style={styles.savingTotal}>
-              총 {todaySaving?.todayTotalMoney.toLocaleString() || '0'}원
-            </Text>
-          )}
-        </View>
-        {!loading &&
-          !error &&
-          [
-            {category: category1, color: CATEGORY1_COLOR},
-            {category: category2, color: CATEGORY2_COLOR},
-            {category: category3, color: DEFAULT_COLOR},
-          ].map((entry, index) => {
-            const matchingCategory = todaySaving?.todaySavingCategoryList.find(
-              apiCategory => apiCategory.categoryName === entry.category?.name,
-            );
 
-            return (
-              <View style={styles.savingDetails} key={index}>
-                <Text>{entry.category?.name || '알 수 없음'}
+          <Text style={styles.savingTotal}>
+            총 {todaySaving?.todayTotalMoney.toLocaleString() || '0'}원
+          </Text>
+        </View>
+        {[
+          {category: category1, color: CATEGORY1_COLOR},
+          {category: category2, color: CATEGORY2_COLOR},
+          {category: category3, color: DEFAULT_COLOR},
+        ].map((entry, index) => {
+          const matchingCategory = todaySaving?.todaySavingCategoryList.find(
+            apiCategory => apiCategory.categoryName === entry.category?.name,
+          );
+
+          return (
+            <View style={styles.savingDetails} key={index}>
+              <Text>
+                {entry.category?.name || '알 수 없음'}
                 <View style={styles.dotsContainer}>
                   {Array.from({
                     length: matchingCategory?.totalSavingChance || 0,
@@ -328,16 +332,16 @@ const AkkiScreen = () => {
                     />
                   ))}
                 </View>
-                </Text>
-                <Text>
-                  {matchingCategory
-                    ? matchingCategory.totalSavingCategoryMoney.toLocaleString()
-                    : '0'}
-                  원
-                </Text>
-              </View>
-            );
-          })}
+              </Text>
+              <Text>
+                {matchingCategory
+                  ? matchingCategory.totalSavingCategoryMoney.toLocaleString()
+                  : '0'}
+                원
+              </Text>
+            </View>
+          );
+        })}
       </View>
 
       <Modal visible={modalVisible} transparent={true} animationType="slide">
@@ -398,9 +402,13 @@ const AkkiScreen = () => {
       <View style={styles.calendarSection}>
         <CalendarComponent
           onSelectDate={handleSelectDate}
-          // selectedCategories={savings[selectedDate] || []}
-          selectedCategories={testData}
+          markedDates={markedDates}
           onOpenBottomSheet={handleOpenBottomSheet}
+          savings={savings}
+          category1={category1}
+          category2={category2}
+          category3={category3}
+          memberNo={memberNo || 0} // memberNo 전달
         />
 
         <AkkiBottomSheet
@@ -435,19 +443,6 @@ const AkkiScreen = () => {
               </View>
             ) : null,
           )}
-          <View style={styles.categoryTotal}>
-            <View style={[styles.dot, {backgroundColor: DEFAULT_COLOR}]} />
-            <Image
-              source={require('../assets/icons/plus.png')}
-              style={styles.categoryIcon}
-            />
-            <View style={styles.categoryDetail}>
-              <Text style={styles.categoryName}>기타 17회</Text>
-              <Text style={styles.categoryAmount}>
-                {savings['기타'].toLocaleString() || '0'}원
-              </Text>
-            </View>
-          </View>
         </View>
       </View>
     </ScrollView>
