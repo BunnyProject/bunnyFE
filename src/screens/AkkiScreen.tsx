@@ -17,12 +17,18 @@ import {iconData} from './IconSelectScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {RootStackParamList} from '../types/types';
 import {useSaveMoney} from '../hooks/useSaveMoney';
+import {useTodaySaving} from '../hooks/useTodaySaving';
 
 type Carrot = {id: number; fallAnim: Animated.Value; position: number};
 type Category = {name: string; source: any; color?: string};
 
 const bunnyImage = require('../assets/AkkiBunny.png');
 const carrotImage = require('../assets/Carrot.png');
+
+const getMemberNo = async (): Promise<number | null> => {
+  const userId = await AsyncStorage.getItem('userId');
+  return userId ? Number(userId) : null;
+};
 
 const AkkiScreen = () => {
   const route = useRoute<RouteProp<RootStackParamList, 'Akki'>>();
@@ -38,11 +44,14 @@ const AkkiScreen = () => {
   );
   const [inputAmount, setInputAmount] = useState('');
   const [isBottomSheetVisible, setBottomSheetVisible] = useState(false);
+  const [memberNo, setMemberNo] = useState<number | null>(null);
 
   const bunnyBounceAnim = useRef(new Animated.Value(0)).current;
   const [accumulatedCarrots, setAccumulatedCarrots] = useState<Carrot[]>([]);
   const [savings, setSavings] = useState<Record<string, number>>({기타: 0});
+
   const {saveMoney} = useSaveMoney();
+  const {todaySaving, loading, error, refetch} = useTodaySaving(memberNo || 0);
 
   const DEFAULT_COLOR = '#DECDFF';
   const CATEGORY1_COLOR = '#98A2FF';
@@ -50,6 +59,9 @@ const AkkiScreen = () => {
 
   useEffect(() => {
     const fetchCategories = async () => {
+      const fetchedMemberNo = await getMemberNo();
+      setMemberNo(fetchedMemberNo);
+
       const savedIcons = await AsyncStorage.getItem('selectedIcons');
       if (savedIcons) {
         const {firstCategory, secondCategory, otherCategoryName} =
@@ -135,11 +147,9 @@ const AkkiScreen = () => {
       }),
     ]).start();
   };
-
   const handleComplete = async () => {
     if (selectedCategory && inputAmount) {
       try {
-        const memberNo = await AsyncStorage.getItem('userId');
         const savedIcons = await AsyncStorage.getItem('selectedIcons');
         const parsedIcons = savedIcons ? JSON.parse(savedIcons) : {};
 
@@ -153,19 +163,18 @@ const AkkiScreen = () => {
         const today = new Date().toISOString().split('T')[0];
 
         await saveMoney({
-          memberNo: Number(memberNo),
+          memberNo: memberNo!,
           categoryId,
           categoryName: selectedCategory.name,
-          detail: selectedCategory.name === '기타' ? detail : '', // 기타에서만 detail 사용
+          detail: selectedCategory.name === '기타' ? detail : '',
           savingDay: today,
           savingPrice: Number(inputAmount),
         });
 
-        setSavings(prev => ({
-          ...prev,
-          [selectedCategory.name]:
-            prev[selectedCategory.name] + parseInt(inputAmount, 10),
-        }));
+        // 새로 추가된 데이터를 반영하기 위해 API 재호출
+        if (memberNo) {
+          await refetch(memberNo);
+        }
 
         setModalVisible(false);
         setInputAmount('');
@@ -282,38 +291,55 @@ const AkkiScreen = () => {
           </TouchableOpacity>
         )}
       </View>
-      {/* 오늘의 아끼기 */}
       <View style={styles.savingSummary}>
         <View style={styles.titleContainer}>
           <Text style={styles.savingTitle}>오늘의 아끼기</Text>
-          <Text style={styles.savingTotal}>
-            총{' '}
-            {Object.values(savings)
-              .reduce((a, b) => a + b, 0)
-              .toLocaleString() || '0'}
-            원
-          </Text>
+          {loading ? (
+            <Text style={styles.loadingText}>로딩 중...</Text>
+          ) : error ? (
+            <Text style={styles.errorText}>오류 발생: {error}</Text>
+          ) : (
+            <Text style={styles.savingTotal}>
+              총 {todaySaving?.todayTotalMoney.toLocaleString() || '0'}원
+            </Text>
+          )}
         </View>
-        {/* 선택된 카테고리들을 표시하고 기타를 항상 마지막에 표시 */}
-        {category1 && (
-          <View style={styles.savingDetails}>
-            <Text>{category1.name}</Text>
-            <Text>{savings[category1.name]?.toLocaleString() || '0'}원</Text>
-          </View>
-        )}
-        {category2 && (
-          <View style={styles.savingDetails}>
-            <Text>{category2.name}</Text>
-            <Text>{savings[category2.name]?.toLocaleString() || '0'}원</Text>
-          </View>
-        )}
-        {category3 && (
-          <View style={styles.savingDetails}>
-            <Text>{category3.name}</Text>
-            <Text>{savings[category3.name]?.toLocaleString() || '0'}원</Text>
-          </View>
-        )}
+        {!loading &&
+          !error &&
+          [
+            {category: category1, color: CATEGORY1_COLOR},
+            {category: category2, color: CATEGORY2_COLOR},
+            {category: category3, color: DEFAULT_COLOR},
+          ].map((entry, index) => {
+            const matchingCategory = todaySaving?.todaySavingCategoryList.find(
+              apiCategory => apiCategory.categoryName === entry.category?.name,
+            );
+
+            return (
+              <View style={styles.savingDetails} key={index}>
+                <Text>{entry.category?.name || '알 수 없음'}
+                <View style={styles.dotsContainer}>
+                  {Array.from({
+                    length: matchingCategory?.totalSavingChance || 0,
+                  }).map((_, dotIndex) => (
+                    <View
+                      key={dotIndex}
+                      style={[styles.dot, {backgroundColor: entry.color}]}
+                    />
+                  ))}
+                </View>
+                </Text>
+                <Text>
+                  {matchingCategory
+                    ? matchingCategory.totalSavingCategoryMoney.toLocaleString()
+                    : '0'}
+                  원
+                </Text>
+              </View>
+            );
+          })}
       </View>
+
       <Modal visible={modalVisible} transparent={true} animationType="slide">
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
@@ -494,7 +520,7 @@ const styles = StyleSheet.create({
     color: '#FF7B7B',
     textAlign: 'center',
     padding: -10,
-  },  
+  },
   buttons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -611,19 +637,29 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     alignItems: 'center',
   },
+  loadingText: {
+    fontSize: 14,
+    color: '#808080',
+  },
+  errorText: {
+    fontSize: 14,
+    color: '#FF7B7B',
+  },
   iconWithDots: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   dotsContainer: {
     flexDirection: 'row',
-    marginLeft: 5,
+    alignItems: 'flex-start',
+    paddingLeft: 10,
+    // marginRight: 50,
   },
   dot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    marginHorizontal: 10,
+    marginHorizontal: 2,
   },
   amountText: {
     color: '#FF7B7B',
