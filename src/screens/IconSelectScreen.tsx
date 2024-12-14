@@ -32,6 +32,7 @@ export const iconData = [
   {name: '취미', source: require('../assets/icons/hobbey.png')},
   {name: '문화생활', source: require('../assets/icons/culture.png')},
   {name: '구독료', source: require('../assets/icons/subscribe.png')},
+  {name: '기타', source: require('../assets/icons/plus.png')},
 ];
 
 // const navigation = useNavigation<IconSelectScreenNavigationProp>();
@@ -77,8 +78,12 @@ const IconSelectScreen = () => {
         const savedData = {
           firstCategory: response.success.categoryName1,
           secondCategory: response.success.categoryName2,
+          firstCategoryId: response.success.firstCategoryId,
+          secondCategoryId: response.success.secondCategoryId,
+          otherCategoryId: response.success.otherCategoryId,
+          otherCategoryName: response.success.otherCategoryName,
         };
-        await AsyncStorage.setItem('selectedIcons', JSON.stringify(savedData)); // 응답 데이터 저장
+        await AsyncStorage.setItem('selectedIcons', JSON.stringify(savedData));
 
         // navigation.navigate를 사용해 selectedIcons를 전달
         navigation.navigate('Akki', {selectedIcons});
