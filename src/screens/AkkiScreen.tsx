@@ -31,10 +31,30 @@ const getMemberNo = async (): Promise<number | null> => {
   return userId ? Number(userId) : null;
 };
 
-const getMonthStartAndEndDates = (): {start: string; end: string} => {
+const getMonthStartAndEndDates = (
+  year?: number,
+  month?: number,
+): {start: string; end: string} => {
   const now = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth(), 1); // 월의 시작일
-  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0); // 월의 마지막 일
+  const targetYear = year || now.getFullYear();
+  const targetMonth = typeof month === 'number' ? month - 1 : now.getMonth();
+
+  const start = new Date(targetYear, targetMonth, 1);
+  const end = new Date(targetYear, targetMonth + 1, 0);
+
+  return {
+    start: start.toISOString().split('T')[0],
+    end: end.toISOString().split('T')[0],
+  };
+};
+
+const getPreviousMonthRange = (year: number, month: number) => {
+  const prevMonth = month - 1 === 0 ? 12 : month - 1;
+  const prevYear = month - 1 === 0 ? year - 1 : year;
+
+  const start = new Date(prevYear, prevMonth - 1, 1);
+  const end = new Date(prevYear, prevMonth, 0);
+
   return {
     start: start.toISOString().split('T')[0],
     end: end.toISOString().split('T')[0],
@@ -56,21 +76,53 @@ const AkkiScreen = () => {
   const [detail, setDetail] = useState('');
   const [memberNo, setMemberNo] = useState<number | null>(null);
   const [accumulatedCarrots, setAccumulatedCarrots] = useState<Carrot[]>([]);
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1); // 현재 월
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear()); // 현재 연도
+  const {start, end} = getMonthStartAndEndDates(currentYear, currentMonth);
+  const [markedDates, setMarkedDates] = useState({});
+  const {start: prevStart, end: prevEnd} = getPreviousMonthRange(
+    currentYear,
+    currentMonth,
+  );
 
-  const {start: startInclusive, end: endInclusive} = getMonthStartAndEndDates();
-  const {
-    savings,
-    markedDates,
-    loading: monthlyLoading,
-    error,
-  } = useMonthlySavings(
+  const {savings: currentSavings, loading: monthlyLoading} = useMonthlySavings(
     memberNo || 0,
-    startInclusive,
-    endInclusive,
+    start,
+    end,
     category1?.name || '',
     category2?.name || '',
     category3?.name || '',
   );
+
+  const {savings: prevSavings} = useMonthlySavings(
+    memberNo || 0,
+    prevStart,
+    prevEnd,
+    category1?.name || '',
+    category2?.name || '',
+    category3?.name || '',
+  );
+
+  const calculateDifference = () => {
+    const currentTotal = currentSavings.reduce(
+      (sum, saving) => sum + saving.savingPrice,
+      0,
+    );
+    const prevTotal = prevSavings.reduce(
+      (sum, saving) => sum + saving.savingPrice,
+      0,
+    );
+
+    const difference = currentTotal - prevTotal;
+    return {
+      difference,
+      currentTotal,
+      prevTotal,
+    };
+  };
+
+  const {difference, currentTotal, prevTotal} = calculateDifference();
+
   const {todaySaving, loading, refetch} = useTodaySaving(memberNo || 0);
   const {saveMoney} = useSaveMoney();
 
@@ -97,7 +149,6 @@ const AkkiScreen = () => {
           icon => icon.name === otherCategoryName,
         );
 
-        // category1 설정
         if (category1Data) {
           setCategory1({
             ...category1Data,
@@ -111,7 +162,6 @@ const AkkiScreen = () => {
           });
         }
 
-        // category2 설정
         if (category2Data) {
           setCategory2({
             ...category2Data,
@@ -152,35 +202,37 @@ const AkkiScreen = () => {
       } else if (category3 && categoryName === category3.name) {
         return DEFAULT_COLOR;
       }
-      return '#D3D3D3'; // 기본 색상 (기타)
+      return '#D3D3D3';
     },
     [category1, category2, category3],
   );
 
   useEffect(() => {
-    if (!monthlyLoading && savings) {
-      const newMarkedDates: MarkedDates = {}; // 새로 생성된 markedDates
+    if (!loading && currentSavings ) {
+      const newMarkedDates: MarkedDates = {};
 
-      savings.forEach((saving: MonthlySaving) => {
+      currentSavings .forEach((saving: MonthlySaving) => {
         const date = saving.savingDay;
 
         if (!newMarkedDates[date]) {
-          newMarkedDates[date] = {
-            marked: true,
-            dots: [],
-          };
+          newMarkedDates[date] = {marked: true, dots: []};
         }
 
-        newMarkedDates[date].dots!.push({
-          key: `${saving.savingId}`,
-          color: getCategoryColor(saving.categoryName),
-        });
+        const existingDot = newMarkedDates[date].dots?.find(
+          dot => dot.color === getCategoryColor(saving.categoryName),
+        );
+
+        if (!existingDot) {
+          newMarkedDates[date].dots?.push({
+            key: `${saving.savingId}`,
+            color: getCategoryColor(saving.categoryName),
+          });
+        }
       });
 
-      // 기존 setMarkedDates 호출 제거
-      // markedDates는 useMonthlySavings에서 반환되므로 별도로 업데이트하지 않습니다.
+      setMarkedDates(newMarkedDates);
     }
-  }, [savings, monthlyLoading, getCategoryColor]);
+  }, [loading, currentSavings , getCategoryColor]);
 
   const handleCategoryPress = (icon: Category) => {
     setSelectedCategory(icon);
@@ -224,7 +276,6 @@ const AkkiScreen = () => {
           savingPrice: Number(inputAmount),
         });
 
-        // 새로 추가된 데이터를 반영하기 위해 API 재호출
         if (memberNo) {
           await refetch(memberNo);
         }
@@ -249,6 +300,11 @@ const AkkiScreen = () => {
   // 날짜 선택 시 처리
   const handleSelectDate = (date: string) => {
     setSelectedDate(date);
+  };
+
+  const handleMonthChange = (month: number, year: number) => {
+    setCurrentMonth(month);
+    setCurrentYear(year);
   };
 
   return (
@@ -402,13 +458,14 @@ const AkkiScreen = () => {
       <View style={styles.calendarSection}>
         <CalendarComponent
           onSelectDate={handleSelectDate}
-          markedDates={markedDates}
           onOpenBottomSheet={handleOpenBottomSheet}
-          savings={savings}
+          savings={currentSavings }
           category1={category1}
           category2={category2}
           category3={category3}
-          memberNo={memberNo || 0} // memberNo 전달
+          memberNo={memberNo || 0}
+          markedDates={markedDates}
+          onMonthChange={handleMonthChange}
         />
 
         <AkkiBottomSheet
@@ -418,14 +475,38 @@ const AkkiScreen = () => {
         {/* 월별 총 아끼기 금액 */}
         <View style={styles.monthlyTotalSection}>
           <Text style={styles.monthlyTotalTitle}>이번 달 아끼기 누적액</Text>
-          <Text style={styles.monthlyTotalAmount}>총 37만 6,500원</Text>
+          <Text style={styles.monthlyTotalAmount}>
+            총{' '}
+            {currentSavings 
+              .reduce((sum, saving) => sum + saving.savingPrice, 0)
+              .toLocaleString() || '0'}
+            원
+          </Text>
           <Text style={styles.monthlyComparison}>
             지난 달 같은 기간보다{' '}
-            <Text style={styles.amountHighlight}>5만 8,000원</Text> 더 아꼈어요
+            <Text
+              style={[
+                styles.amountHighlight,
+                {color: difference > 0 ? '#98A2FF' : '#FF7B7B'},
+              ]}>
+              {Math.abs(difference).toLocaleString()}원
+            </Text>{' '}
+            {difference > 0 ? '더 아꼈어요' : '덜 아꼈어요'}
           </Text>
-          {/* 카테고리별 금액 및 이미지 */}
-          {[category1, category2].map((category, index) =>
-            category ? (
+
+          {[category1, category2, category3].map((category, index) => {
+            if (!category) return null;
+
+            const filteredSavings = currentSavings .filter(
+              saving => saving.categoryName === category.name,
+            );
+            const totalAmount = filteredSavings.reduce(
+              (sum, saving) => sum + saving.savingPrice,
+              0,
+            );
+            const totalCount = filteredSavings.length;
+
+            return (
               <View style={styles.categoryTotal} key={index}>
                 <View
                   style={[
@@ -435,14 +516,16 @@ const AkkiScreen = () => {
                 />
                 <Image source={category.source} style={styles.categoryIcon} />
                 <View style={styles.categoryDetail}>
-                  <Text style={styles.categoryName}>{category.name} 14회</Text>
+                  <Text style={styles.categoryName}>
+                    {category.name} {totalCount}회
+                  </Text>
                   <Text style={styles.categoryAmount}>
-                    {savings[category.name]?.toLocaleString() || '0'}원
+                    {totalAmount.toLocaleString()}원
                   </Text>
                 </View>
               </View>
-            ) : null,
-          )}
+            );
+          })}
         </View>
       </View>
     </ScrollView>

@@ -24,6 +24,7 @@ type CalendarComponentProps = {
   category3: {name: string; source: any; color: string};
   memberNo: number;
   markedDates: MarkedDates;
+  onMonthChange: (month: number, year: number) => void;
 };
 
 const CalendarComponent: React.FC<CalendarComponentProps> = ({
@@ -35,6 +36,7 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
   category2,
   category3,
   markedDates,
+  onMonthChange,
 }) => {
   const [isModalVisible, setModalVisible] = useState(false);
   const [selectedDate, setSelectedDate] = useState('');
@@ -43,6 +45,15 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
     [key: number]: string;
   }>({});
   const {data} = useSaveDetail(memberNo, selectedDate);
+
+  const handleDayPress = (day) => {
+    onSelectDate(day.dateString);
+  };
+
+  const handleMonthChange = (month) => {
+    onMonthChange(month.month, month.year); // 월/년 정보 전달
+  };
+
 
   const toggleModal = () => {
     setModalVisible(!isModalVisible);
@@ -69,12 +80,15 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
   const updateAmount = (id: string, amount: string) => {
     setEditableAmounts(prev => ({...prev, [id]: amount}));
   };
+  
 
   return (
     <View>
       <Calendar
         onDayPress={onDayPress}
+        onMonthChange={handleMonthChange}
         markedDates={markedDates || {}}
+         markingType="multi-dot"
         theme={{
           selectedDayBackgroundColor: '#98A2FF',
           todayTextColor: '#98A2FF',
