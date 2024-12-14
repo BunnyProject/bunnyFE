@@ -1,6 +1,6 @@
 import axiosInstance from './axiosInstance';
 import apiEndpoints from './apiEndpoints';
-import { SaveMoneyParams } from '../types/types';
+import { SaveDetailResponse, SaveMoneyParams, TodaySavingResponse } from '../types/types';
 
 // 아끼기 금액 설정
 export const createSavingAmount = async (params: SaveMoneyParams) => {
@@ -38,14 +38,23 @@ export const createSavingAmount = async (params: SaveMoneyParams) => {
   };
   
   // 먼슬리 아끼기 조회
-  export const getMonthlySavings = async (memberNo: number, startInclusive: string, endInclusive: string) => {
+  export const getMonthlySavings = async (
+    memberNo: number,
+    startInclusive: string,
+    endInclusive: string
+  ): Promise<any> => {
     try {
       const response = await axiosInstance.get(apiEndpoints.save.getMonthlySavings, {
         headers: { 'member-no': memberNo },
         params: { startInclusive, endInclusive },
       });
-      return response.data;
-    } catch (error) {
+  
+      if (response.data && response.data.resultType === 'SUCCESS') {
+        return response.data.success;
+      } else {
+        throw new Error(response.data?.error?.message || 'Unknown error occurred.');
+      }
+    } catch (error: any) {
       console.error('Error fetching monthly savings:', error);
       throw error;
     }
@@ -54,7 +63,7 @@ export const createSavingAmount = async (params: SaveMoneyParams) => {
   // 아끼기 상세 스케줄 조회
   export const getSavingDetails = async (memberNo: number, targetDay: string) => {
     try {
-      const response = await axiosInstance.get(apiEndpoints.save.getSavingDetail, {
+      const response = await axiosInstance.get<SaveDetailResponse>(apiEndpoints.save.getSavingDetail, {
         headers: { 'member-no': memberNo },
         params: { targetDay },
       });
@@ -78,3 +87,14 @@ export const createSavingAmount = async (params: SaveMoneyParams) => {
     }
   };
   
+  export const fetchTodaySaving = async (memberNo: number): Promise<TodaySavingResponse> => {
+    try {
+      const response = await axiosInstance.get(apiEndpoints.save.getSavingToday, {
+        headers: { 'member-no': memberNo.toString() },
+      });
+      return response.data.success;
+    } catch (error: any) {
+      console.error('Error fetching today\'s savings:', error);
+      throw new Error(error.response?.data?.error?.message || 'API 호출 실패');
+    }
+  };
