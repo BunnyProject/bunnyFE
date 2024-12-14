@@ -18,6 +18,7 @@ const apiEndpoints = {
       createSavingIcon: '/save/icon', // 아끼기 항목 설정
       getMonthlySavings: '/save', // 먼슬리 아끼기 조회
       getSavingDetail: '/save/detail', // 아끼기 상세 스케줄 조회
+      getSavingToday: '/save/today-saving', // 오늘의 아끼기 조회
       deleteSaving: (savingId: string | number) => `/save/${savingId}`, // 아낀 내역 삭제
     },
     swagger: {
