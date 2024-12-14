@@ -91,3 +91,12 @@ export interface CreateUserResponse {
     message: string;
   };
 };
+
+export interface SaveMoneyParams {
+  memberNo: number;
+  categoryId: number;
+  categoryName: string;
+  detail: string;
+  savingDay: string;
+  savingPrice: number;
+}

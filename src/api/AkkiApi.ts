@@ -1,24 +1,25 @@
 import axiosInstance from './axiosInstance';
 import apiEndpoints from './apiEndpoints';
+import { SaveMoneyParams } from '../types/types';
 
 // 아끼기 금액 설정
-export const createSavingAmount = async (memberNo: number, savingData: {
-    categoryId: number;
-    categoryName: string;
-    detail: string;
-    savingDay: string; // ISO Date format (e.g., '2024-11-23')
-    savingPrice: number;
-  }) => {
-    try {
-      const response = await axiosInstance.post(apiEndpoints.save.createSavingAmount, savingData, {
-        headers: { 'member-no': memberNo },
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error creating saving amount:', error);
-      throw error;
-    }
-  };
+export const createSavingAmount = async (params: SaveMoneyParams) => {
+  const { memberNo, ...savingData } = params; // memberNo를 헤더로, 나머지를 본문으로 전달
+
+  try {
+    const response = await axiosInstance.post(
+      apiEndpoints.save.createSavingAmount,
+      savingData,
+      {
+        headers: { 'member-no': memberNo.toString() },
+      }
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('Error creating saving amount:', error);
+    throw new Error(error.response?.data?.error?.message || 'API 호출 실패');
+  }
+};
   
   // 아끼기 항목 설정
   export const createSavingIcon = async (memberNo: number, iconData: {
