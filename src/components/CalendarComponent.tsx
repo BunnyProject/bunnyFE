@@ -6,81 +6,127 @@ import {
   TouchableOpacity,
   Image,
   ScrollView,
+  Alert,
 } from 'react-native';
 import {Calendar} from 'react-native-calendars';
 import Modal from 'react-native-modal';
 import {format, isValid} from 'date-fns';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {TextInput} from 'react-native-gesture-handler';
+import {MarkedDates, MonthlySaving} from '../types/types';
+import {useSaveDetail} from '../hooks/useSaveDetail';
+import {useDeleteSaving} from '../hooks/useDeleteSaving';
 
 type CalendarComponentProps = {
-  selectedCategories: {
-    name: string;
-    source: any;
-    amount: number;
-    time: string;
-    id: string;
-    color: string;
-  }[];
   onSelectDate: (date: string) => void;
-  onOpenBottomSheet: () => void;
+  onOpenBottomSheet: (date?: string) => void;
+  savings: MonthlySaving[];
+  category1: {name: string; source: any; color: string};
+  category2: {name: string; source: any; color: string};
+  category3: {name: string; source: any; color: string};
+  memberNo: number;
+  markedDates: MarkedDates;
+  onMonthChange: (month: number, year: number) => void;
 };
 
 const CalendarComponent: React.FC<CalendarComponentProps> = ({
-  selectedCategories,
   onSelectDate,
   onOpenBottomSheet,
+  memberNo,
+  savings,
+  category1,
+  category2,
+  category3,
+  markedDates, // props에서 전달받음
+  onMonthChange,
 }) => {
   const [isModalVisible, setModalVisible] = useState(false);
   const [selectedDate, setSelectedDate] = useState('');
-  const [editableAmounts, setEditableAmounts] = useState(
-    selectedCategories.reduce((acc, item) => {
-      acc[item.id] = item.amount.toString();
-      return acc;
-    }, {} as {[key: string]: string}),
-  );
+  const [selectedSavings, setSelectedSavings] = useState<MonthlySaving[]>([]);
+  const [editableAmounts, setEditableAmounts] = useState<{
+    [key: number]: string;
+  }>({});
+  const {data} = useSaveDetail(memberNo, selectedDate);
+  const {handleDeleteSaving} = useDeleteSaving();
+
+  const handleDelete = async (
+    savingId: number,
+    categoryName: string,
+    savingPrice: number,
+  ) => {
+    try {
+      // Body 데이터 구성
+      const body = {
+        categoryName, // 카테고리 이름
+        savingPrice, // 저장된 금액
+      };
+
+      // handleDeleteSaving 호출
+      const response = await handleDeleteSaving(memberNo, savingId, body);
+
+      if (response?.resultType === 'SUCCESS') {
+        setSelectedSavings(prev =>
+          prev.filter(saving => saving.savingId !== savingId),
+        );
+        Alert.alert('삭제 완료', '항목이 성공적으로 삭제되었습니다.');
+
+        // 부모 컴포넌트에 알림하여 상태 갱신
+        onMonthChange(
+          new Date(selectedDate).getMonth() + 1,
+          new Date(selectedDate).getFullYear(),
+        );
+      } else {
+        Alert.alert(
+          '삭제 실패',
+          response?.error?.message ||
+            '알 수 없는 오류가 발생했습니다. 다시 시도해주세요.',
+        );
+      }
+    } catch (error) {
+      console.error('삭제 오류:', error);
+      Alert.alert(
+        '삭제 실패',
+        '알 수 없는 오류가 발생했습니다. 다시 시도해주세요.',
+      );
+    }
+  };
+
+  const handleMonthChange = (month: {month: number; year: number}) => {
+    onMonthChange(month.month, month.year);
+  };
 
   const toggleModal = () => {
     setModalVisible(!isModalVisible);
   };
 
   const onDayPress = (day: any) => {
+    const filteredSavings = savings.filter(
+      saving => saving.savingDay === day.dateString,
+    );
     setSelectedDate(day.dateString);
+    setSelectedSavings(filteredSavings);
     toggleModal();
     onSelectDate(day.dateString);
   };
 
-  // 금액 업데이트
+  const getCategoryColor = (categoryName: string) => {
+    if (categoryName === category1.name) return category1.color;
+    if (categoryName === category2.name) return category2.color;
+    if (categoryName === category3.name) return category3.color;
+    return '#DECDFF';
+  };
+
   const updateAmount = (id: string, amount: string) => {
     setEditableAmounts(prev => ({...prev, [id]: amount}));
   };
-
-  // 카테고리별 총 금액 계산
-  const getCategoryTotals = () => {
-    const categoryMap: {[key: string]: number} = {};
-    selectedCategories.forEach(item => {
-      if (categoryMap[item.name]) {
-        categoryMap[item.name] += item.amount;
-      } else {
-        categoryMap[item.name] = item.amount;
-      }
-    });
-    return categoryMap;
-  };
-
-  const categoryTotals = getCategoryTotals();
 
   return (
     <View>
       <Calendar
         onDayPress={onDayPress}
-        markedDates={{
-          [selectedDate]: {
-            selected: true,
-            marked: true,
-            selectedColor: '#98A2FF',
-          },
-        }}
+        onMonthChange={handleMonthChange}
+        markedDates={markedDates || {}}
+        markingType="multi-dot"
         theme={{
           selectedDayBackgroundColor: '#98A2FF',
           todayTextColor: '#98A2FF',
@@ -112,14 +158,16 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
                     </Text>
                     <Text style={styles.modalTotal}>
                       총{' '}
-                      {selectedCategories
-                        .reduce((sum, item) => sum + item.amount, 0)
-                        .toLocaleString()}
+                      {data?.success.totalSavingMoney
+                        ? data.success.totalSavingMoney.toLocaleString()
+                        : 0}
                       원
                     </Text>
                   </View>
                   <TouchableOpacity
-                    onPress={onOpenBottomSheet}
+                    onPress={() => {
+                      onOpenBottomSheet(selectedDate); // Open the bottom sheet
+                    }}
                     style={styles.addButtonContainer}>
                     <View style={styles.addButtonContent}>
                       <Ionicons name="add" size={20} color="#98A2FF" />
@@ -127,57 +175,111 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
                     </View>
                   </TouchableOpacity>
                 </View>
-                {/* 카테고리별 총 금액 표시 */}
                 <View style={styles.categorySummary}>
-                  {Object.keys(categoryTotals).map((category, index) => {
-                    const icon = selectedCategories.find(
-                      item => item.name === category,
-                    )?.source;
+                  {[category1, category2, category3].map((category, index) => {
+                    if (!category) return null;
+
+                    const matchingDetails =
+                      data?.success.detailSaveMoneyList.filter(item =>
+                        item.detail.includes(category.name),
+                      );
+
+                    const totalAmount = matchingDetails
+                      ? matchingDetails.reduce(
+                          (sum, item) => sum + item.savingPrice,
+                          0,
+                        )
+                      : 0;
+
+                    const totalCount = matchingDetails
+                      ? matchingDetails.length
+                      : 0;
+
                     return (
                       <View key={index} style={styles.categoryRow}>
                         <View
-                            style={[styles.dot, {backgroundColor: icon.color}]}
+                          style={[
+                            styles.dot,
+                            {backgroundColor: category.color || '#D3D3D3'},
+                          ]}
+                        />
+                        {category.source && (
+                          <Image
+                            source={category.source}
+                            style={styles.iconImage}
                           />
-                        {icon && (
-                          <Image source={icon} style={styles.iconImage} />
                         )}
                         <View style={styles.categoryDetail}>
-                          
-                          <Text style={styles.categoryText}>{category}</Text>
+                          <Text style={styles.categoryText}>
+                            {category.name} {totalCount}회
+                          </Text>
                           <Text style={styles.categoryAmount}>
-                            {categoryTotals[category].toLocaleString()}원
+                            {totalAmount.toLocaleString()}원
                           </Text>
                         </View>
                       </View>
                     );
                   })}
                 </View>
-                {/* 시간 순으로 정렬된 세부 내역 */}
-                {selectedCategories
-                  .sort(
+
+                {data?.success.detailSaveMoneyList
+                  ?.sort(
                     (a, b) =>
-                      new Date(a.time).getTime() - new Date(b.time).getTime(),
+                      new Date(a.savingId).getTime() -
+                      new Date(b.savingId).getTime(),
                   )
-                  .map(item => (
-                    <View style={styles.detailRow} key={item.id}>
-                      <View style={styles.detailText}>
-                      <View
-                            style={[styles.dot, {backgroundColor: item.color}]}
+                  .map(item => {
+                    const displayCategoryName =
+                      item.categoryName.trim() || item.detail.trim();
+
+                    return (
+                      <View style={styles.detailRow} key={item.savingId}>
+                        <View style={styles.detailText}>
+                          <View
+                            style={[
+                              styles.dot,
+                              {
+                                backgroundColor:
+                                  getCategoryColor(displayCategoryName),
+                              },
+                            ]}
                           />
-                        <Text style={styles.iconText}>{item.name}</Text>
-                        <TextInput
-                          style={styles.amountText}
-                          keyboardType="numeric"
-                          value={editableAmounts[item.id]}
-                          onChangeText={text => updateAmount(item.id, text)}
-                        />
+                          <Text style={styles.iconText}>
+                            {displayCategoryName}
+                          </Text>
+
+                          <TextInput
+                            style={styles.amountText}
+                            keyboardType="numeric"
+                            value={
+                              editableAmounts[item.savingId]?.toString() ||
+                              item.savingPrice.toString()
+                            }
+                            onChangeText={text =>
+                              updateAmount(item.savingId.toString(), text)
+                            }
+                          />
+                        </View>
+
+                        {/* "기타"일 때만 세부 내용 추가 표시 */}
+                        {item.categoryName === '기타' && (
+                          <Text style={styles.iconText}>{item.detail}</Text>
+                        )}
+
+                        {/* 삭제 버튼 */}
+                        <TouchableOpacity
+                          onPress={() =>
+                            handleDelete(
+                              item.savingId,
+                              item.detail,
+                              item.savingPrice,
+                            )
+                          }>
+                          <Ionicons name="trash-outline" size={20} />
+                        </TouchableOpacity>
                       </View>
-                      <TouchableOpacity
-                        onPress={() => console.log('삭제 버튼 클릭')}>
-                        <Ionicons name="trash-outline" size={20} />
-                      </TouchableOpacity>
-                    </View>
-                  ))}
+                    );
+                  })}
               </View>
             ) : (
               <Text style={styles.modalTitle}>유효하지 않은 날짜</Text>

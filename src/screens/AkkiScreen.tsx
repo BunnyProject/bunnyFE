@@ -1,4 +1,4 @@
-import React, {useRef, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {
   Animated,
   ScrollView,
@@ -9,39 +9,256 @@ import {
   Modal,
   TouchableOpacity,
   TextInput,
+  Alert,
 } from 'react-native';
-import {useRoute, RouteProp} from '@react-navigation/native';
-import {Easing} from 'react-native';
 import CalendarComponent from '../components/CalendarComponent';
 import AkkiBottomSheet from '../components/AkkiBottomSheet';
+import {iconData} from './IconSelectScreen';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  MarkedDates,
+  MonthlySaving,
+  TodaySavingCategory,
+} from '../types/types';
+import {useTodaySaving} from '../hooks/useTodaySaving';
+import {useMonthlySavings} from '../hooks/useMonthlySavings';
+import {refetchAll} from '../api/AkkiApi';
+import {useHandleSaveMoney} from '../utils/saveMoneyUtil';
 
-type RootStackParamList = {
-  AkkiScreen: {
-    selectedIcons: {name: string; source: any}[];
-  };
-};
 type Carrot = {id: number; fallAnim: Animated.Value; position: number};
 type Category = {name: string; source: any; color?: string};
 
 const bunnyImage = require('../assets/AkkiBunny.png');
 const carrotImage = require('../assets/Carrot.png');
 
+const getMemberNo = async (): Promise<number | null> => {
+  const userId = await AsyncStorage.getItem('userId');
+  return userId ? Number(userId) : null;
+};
+
+const getMonthStartAndEndDates = (
+  year?: number,
+  month?: number,
+): {start: string; end: string} => {
+  const now = new Date();
+  const targetYear = year || now.getFullYear();
+  const targetMonth = typeof month === 'number' ? month - 1 : now.getMonth();
+
+  const start = new Date(targetYear, targetMonth, 1);
+  const end = new Date(targetYear, targetMonth + 1, 0);
+
+  return {
+    start: start.toISOString().split('T')[0],
+    end: end.toISOString().split('T')[0],
+  };
+};
+
+const getPreviousMonthRange = (year: number, month: number) => {
+  const prevMonth = month - 1 === 0 ? 12 : month - 1;
+  const prevYear = month - 1 === 0 ? year - 1 : year;
+
+  const start = new Date(prevYear, prevMonth - 1, 1);
+  const end = new Date(prevYear, prevMonth, 0);
+
+  return {
+    start: start.toISOString().split('T')[0],
+    end: end.toISOString().split('T')[0],
+  };
+};
+
 const AkkiScreen = () => {
-  const route = useRoute<RouteProp<RootStackParamList, 'AkkiScreen'>>();
-  const {selectedIcons} = route.params || {selectedIcons: []};
-  const [selectedDate, setSelectedDate] = useState('');
+  // const route = useRoute<RouteProp<RootStackParamList, 'Akki'>>();
+  // const { selectedIcons } = route.params || { selectedIcons: [] };
+  const bunnyBounceAnim = useRef(new Animated.Value(0)).current;
+  const [selectedDate, setSelectedDate] = useState<string>('');
+  const [category1, setCategory1] = useState<any>(null);
+  const [category2, setCategory2] = useState<any>(null);
+  const [category3, setCategory3] = useState<any>(null);
+  const [selectedCategory, setSelectedCategory] = useState<any>(null);
   const [modalVisible, setModalVisible] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<{
-    name: string;
-    source: any;
-    color: string;
-  } | null>(null);
   const [inputAmount, setInputAmount] = useState('');
   const [isBottomSheetVisible, setBottomSheetVisible] = useState(false);
+  const [detail, setDetail] = useState('');
+  const [memberNo, setMemberNo] = useState<number | null>(null);
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1); // 현재 월
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear()); // 현재 연도
+  const [markedDates, setMarkedDates] = useState({});
+  const [todaySavingState, setTodaySavingState] = useState<any>(null);
+  const [fallingCarrots, setFallingCarrots] = useState<Carrot[]>([]);
+  const [monthlySavingsState, setMonthlySavingsState] = useState<
+    MonthlySaving[]
+  >([]);
+  const [savingDetailsState, setSavingDetailsState] = useState<any>(null);
+  const {start: prevStart, end: prevEnd} = getPreviousMonthRange(
+    currentYear,
+    currentMonth,
+  );
+  const {handleSaveMoney} = useHandleSaveMoney();
+  const {savings: prevSavings} = useMonthlySavings(
+    memberNo || 0,
+    prevStart,
+    prevEnd,
+    category1?.name || '',
+    category2?.name || '',
+    category3?.name || '',
+  );
 
-  const bunnyBounceAnim = useRef(new Animated.Value(0)).current;
-  const [accumulatedCarrots, setAccumulatedCarrots] = useState([]);
+  const calculateDifference = () => {
+    const currentTotal = monthlySavingsState.reduce(
+      (sum, saving) => sum + saving.savingPrice,
+      0,
+    );
+    const prevTotal = prevSavings.reduce(
+      (sum, saving) => sum + saving.savingPrice,
+      0,
+    );
+
+    const difference = currentTotal - prevTotal;
+    return {
+      difference,
+      currentTotal,
+      prevTotal,
+    };
+  };
+
+  const {difference} = calculateDifference();
+
+  const {loading} = useTodaySaving(memberNo || 0);
+
   const DEFAULT_COLOR = '#DECDFF';
+  const CATEGORY1_COLOR = '#98A2FF';
+  const CATEGORY2_COLOR = '#ACD7FF';
+
+  const addFallingCarrot = () => {
+    const bunnyLeft = 150; // 토끼 이미지의 대략적인 `left` 위치
+    const bunnyWidth = 100; // 토끼 이미지의 폭
+    const carrotStartMin = bunnyLeft - 40; // 토끼 이미지의 왼쪽 경계
+    const carrotStartMax = bunnyLeft + bunnyWidth + 40; // 토끼 이미지의 오른쪽 경계
+
+    const randomX =
+      Math.random() * (carrotStartMax - carrotStartMin) + carrotStartMin;
+
+    const newCarrot = {
+      id: Date.now(),
+      fallAnim: new Animated.Value(-50), // 시작 위치
+      position: randomX, // 랜덤한 x축 위치 (초기값)
+    };
+
+    setFallingCarrots(prev => [...prev, newCarrot]);
+
+    // 애니메이션 시작
+    Animated.timing(newCarrot.fallAnim, {
+      toValue: 100,
+      duration: 1500, // 떨어지는 시간
+      useNativeDriver: true,
+    }).start(() => {
+      setFallingCarrots(prev => [...prev]);
+    });
+  };
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const fetchedMemberNo = await getMemberNo();
+      setMemberNo(fetchedMemberNo);
+
+      const savedIcons = await AsyncStorage.getItem('selectedIcons');
+      if (savedIcons) {
+        const {firstCategory, secondCategory, otherCategoryName} =
+          JSON.parse(savedIcons);
+        const category1Data = iconData.find(
+          icon => icon.name === firstCategory,
+        );
+        const category2Data = iconData.find(
+          icon => icon.name === secondCategory,
+        );
+        const category3Data = iconData.find(
+          icon => icon.name === otherCategoryName,
+        );
+
+        if (category1Data) {
+          setCategory1({
+            ...category1Data,
+            color: CATEGORY1_COLOR,
+          });
+        } else {
+          setCategory1({
+            name: '',
+            source: null,
+            color: CATEGORY1_COLOR,
+          });
+        }
+
+        if (category2Data) {
+          setCategory2({
+            ...category2Data,
+            color: CATEGORY2_COLOR,
+          });
+        } else {
+          setCategory2({
+            name: '',
+            source: null,
+            color: CATEGORY2_COLOR,
+          });
+        }
+
+        if (category3Data) {
+          setCategory3({
+            ...category3Data,
+            color: DEFAULT_COLOR,
+          });
+        } else {
+          setCategory3({
+            name: '',
+            source: null,
+            color: DEFAULT_COLOR,
+          });
+        }
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  const getCategoryColor = useCallback(
+    (categoryName: string): string => {
+      if (category1 && categoryName === category1.name) {
+        return CATEGORY1_COLOR;
+      } else if (category2 && categoryName === category2.name) {
+        return CATEGORY2_COLOR;
+      } else if (category3 && categoryName === category3.name) {
+        return DEFAULT_COLOR;
+      }
+      return '#D3D3D3';
+    },
+    [category1, category2, category3],
+  );
+
+  useEffect(() => {
+    if (!loading && monthlySavingsState) {
+      const newMarkedDates: MarkedDates = {};
+
+      monthlySavingsState.forEach((saving: MonthlySaving) => {
+        const date = saving.savingDay;
+
+        if (!newMarkedDates[date]) {
+          newMarkedDates[date] = {marked: true, dots: []};
+        }
+
+        const existingDot = newMarkedDates[date].dots?.find(
+          dot => dot.color === getCategoryColor(saving.categoryName),
+        );
+
+        if (!existingDot) {
+          newMarkedDates[date].dots?.push({
+            key: `${saving.savingId}`,
+            color: getCategoryColor(saving.categoryName),
+          });
+        }
+      });
+
+      setMarkedDates(newMarkedDates);
+    }
+  }, [loading, monthlySavingsState, getCategoryColor]);
 
   const handleCategoryPress = (icon: Category) => {
     setSelectedCategory(icon);
@@ -62,105 +279,126 @@ const AkkiScreen = () => {
     ]).start();
   };
 
-  const addAccumulatedCarrot = () => {
-    const newCarrot = {
-      id: Date.now(),
-      fallAnim: new Animated.Value(-500), 
-      position: accumulatedCarrots.length,
-    };
-  
-    setAccumulatedCarrots(prevCarrots => [...prevCarrots, newCarrot]);
-  
-    Animated.timing(newCarrot.fallAnim, {
-      toValue: 20, 
-      duration: 7000, 
-      easing: Easing.bounce, 
-      useNativeDriver: true,
-    }).start();
+  const generateMarkedDates = (savings: MonthlySaving[]): MarkedDates => {
+    const newMarkedDates: MarkedDates = {};
+
+    savings.forEach(saving => {
+      const date = saving.savingDay;
+
+      if (!newMarkedDates[date]) {
+        newMarkedDates[date] = {marked: true, dots: []};
+      }
+
+      const color = getCategoryColor(saving.categoryName);
+      const existingDot = newMarkedDates[date].dots?.find(
+        dot => dot.color === color,
+      );
+
+      if (!existingDot) {
+        newMarkedDates[date].dots?.push({
+          key: `${saving.savingId}`,
+          color,
+        });
+      }
+    });
+
+    return newMarkedDates;
   };
-  
 
-  // 모달 완료 버튼 클릭 시 처리
-  const handleComplete = () => {
-    if (selectedCategory && inputAmount) {
-      setSavings(prevSavings => ({
-        ...prevSavings,
-        [selectedCategory.name]:
-          prevSavings[selectedCategory.name] + parseInt(inputAmount, 10),
-      }));
-      setModalVisible(false); // 모달 닫기
+  const handleComplete = async () => {
+    if (!selectedCategory || !inputAmount) {
+      Alert.alert('카테고리와 금액을 입력해주세요!');
+      return;
+    }
+
+    const savingDay = selectedDate || new Date().toISOString().split('T')[0];
+
+    try {
+      await handleSaveMoney({
+        memberNo: memberNo!,
+        categoryName: selectedCategory.name,
+        savingPrice: Number(inputAmount),
+        savingDay,
+        detail: selectedCategory.name === '기타' ? detail : '',
+        currentYear,
+        currentMonth,
+        updateStates: refetchedData => {
+          setTodaySavingState(refetchedData.todaySaving);
+          setMonthlySavingsState(refetchedData.monthlySavings);
+          setSavingDetailsState(refetchedData.savingDetails);
+        },
+      });
+      const {start, end} = getMonthStartAndEndDates(currentYear, currentMonth);
+      const refetchedData = await refetchAll(
+        memberNo!,
+        start,
+        end,
+        selectedDate,
+      );
+
+      setMonthlySavingsState(refetchedData.monthlySavings); // 새 데이터 반영
+      setMarkedDates(generateMarkedDates(refetchedData.monthlySavings));
+
+      addFallingCarrot();
+
+      setModalVisible(false);
       setInputAmount('');
-
-      // "완료" 버튼을 눌렀을 때만 당근 추가
-      addAccumulatedCarrot();
+      setDetail('');
+    } catch (error) {
+      Alert.alert('저장에 실패했습니다. 다시 시도해주세요.');
     }
   };
 
-  const handleOpenBottomSheet = () => {
+  const handleOpenBottomSheet = (date?: string) => {
+    setSelectedDate(date || ''); // Ensure `setSelectedDate` receives a string
     setBottomSheetVisible(true);
   };
 
-  const handleCloseBottomSheet = () => {
+  const handleCloseBottomSheet = async () => {
     setBottomSheetVisible(false);
+
+    try {
+      const {start, end} = getMonthStartAndEndDates(currentYear, currentMonth);
+
+      // 약간의 지연 후 데이터 재요청
+      setTimeout(async () => {
+        const refetchedData = await refetchAll(
+          memberNo!,
+          start,
+          end,
+          selectedDate,
+        );
+        setMonthlySavingsState(refetchedData.monthlySavings);
+        setMarkedDates(generateMarkedDates(refetchedData.monthlySavings));
+      }, 500);
+    } catch (error) {
+      console.error('캘린더 갱신 중 오류 발생:', error);
+    }
   };
-
-  const testData = [
-    {
-      name: '술',
-      source: require('../assets/icons/alcohol.png'),
-      amount: 4500,
-      time: '2024-10-01T09:30:00',
-      id: '1',
-      color: '#98A2FF',
-    },
-    {
-      name: '쇼핑',
-      source: require('../assets/icons/shopping.png'),
-      amount: 12000,
-      time: '2024-10-01T11:00:00',
-      id: '2',
-      color: '#ACD7FF',
-    },
-    {
-      name: '기타',
-      source: require('../assets/icons/plus.png'),
-      amount: 5000,
-      time: '2024-10-02T15:00:00',
-      id: '3',
-      color: DEFAULT_COLOR,
-    },
-    {
-      name: '술',
-      source: require('../assets/icons/alcohol.png'),
-      amount: 3200,
-      time: '2024-10-02T20:30:00',
-      id: '4',
-      color: '#98A2FF',
-    },
-    {
-      name: '쇼핑',
-      source: require('../assets/icons/shopping.png'),
-      amount: 6500,
-      time: '2024-10-03T18:45:00',
-      id: '6',
-      color: '#ACD7FF',
-    },
-  ];
-
-  const initialSavings: Record<string, number> = selectedIcons.reduce(
-    (acc, icon) => {
-      acc[icon.name] = 0;
-      return acc;
-    },
-    {기타: 0},
-  );
-
-  const [savings, setSavings] =
-    useState<Record<string, number>>(initialSavings);
 
   // 날짜 선택 시 처리
   const handleSelectDate = (date: string) => {
     setSelectedDate(date);
+  };
+
+  const handleMonthChange = async (month: number, year: number) => {
+    try {
+      setCurrentMonth(month);
+      setCurrentYear(year);
+
+      const {start, end} = getMonthStartAndEndDates(year, month);
+
+      const refetchedData = await refetchAll(
+        memberNo!,
+        start,
+        end,
+        selectedDate,
+      );
+
+      setMonthlySavingsState(refetchedData.monthlySavings);
+    } catch (error) {
+      console.error('Error fetching monthly savings:', error);
+    }
   };
 
   return (
@@ -178,74 +416,93 @@ const AkkiScreen = () => {
             {transform: [{translateY: bunnyBounceAnim}]},
           ]}
         />
-        {accumulatedCarrots.map((carrot, index) => (
-          <Image
+        {fallingCarrots.map(carrot => (
+          <Animated.Image
             key={carrot.id}
             source={carrotImage}
-            style={[styles.carrotImage, {left: 200 + index * 20, bottom: 10}]}
+            style={[
+              styles.carrotImage,
+              {
+                position: 'absolute',
+                left: carrot.position, // 고정된 위치 사용
+                transform: [{translateY: carrot.fallAnim}],
+              },
+            ]}
           />
         ))}
       </View>
       {/* 선택된 아이콘과 기타 버튼을 표시하는 카테고리 버튼 */}
       <View style={styles.categoryContainer}>
-        {selectedIcons.map(icon => (
+        {category1 && (
           <TouchableOpacity
-            key={icon.name}
-            style={styles.category}
-            onPress={() => handleCategoryPress(icon)}>
-            <Image source={icon.source} style={styles.iconImage} />
-            <Text style={styles.iconText}>{icon.name}</Text>
+            style={[styles.category]}
+            onPress={() => handleCategoryPress(category1)}>
+            <Image source={category1.source} style={styles.iconImage} />
+            <Text style={styles.iconText}>{category1.name}</Text>
           </TouchableOpacity>
-        ))}
-        <TouchableOpacity
-          style={styles.category}
-          onPress={() =>
-            handleCategoryPress({
-              name: '기타',
-              source: require('../assets/icons/plus.png'),
-            })
-          }>
-          <Image
-            source={require('../assets/icons/plus.png')}
-            style={styles.iconImage}
-          />
-          <Text style={styles.iconText}>기타</Text>
-        </TouchableOpacity>
+        )}
+        {category2 && (
+          <TouchableOpacity
+            style={[styles.category]}
+            onPress={() => handleCategoryPress(category2)}>
+            <Image source={category2.source} style={styles.iconImage} />
+            <Text style={styles.iconText}>{category2.name}</Text>
+          </TouchableOpacity>
+        )}
+        {category3 && (
+          <TouchableOpacity
+            style={[styles.category]}
+            onPress={() => handleCategoryPress(category3)}>
+            <Image source={category3.source} style={styles.iconImage} />
+            <Text style={styles.iconText}>{category3.name}</Text>
+          </TouchableOpacity>
+        )}
       </View>
-      {/* 오늘의 아끼기 */}
       <View style={styles.savingSummary}>
         <View style={styles.titleContainer}>
           <Text style={styles.savingTitle}>오늘의 아끼기</Text>
           <Text style={styles.savingTotal}>
-            총{' '}
-            {Object.values(savings)
-              .reduce((a, b) => a + b, 0)
-              .toLocaleString()}
-            원
+            총 {todaySavingState?.todayTotalMoney.toLocaleString() || '0'}원
           </Text>
         </View>
-        {/* 선택된 카테고리들을 표시하고 기타를 항상 마지막에 표시 */}
-        {selectedIcons.map(icon => (
-          <View style={styles.savingDetails} key={icon.name}>
-            <View style={styles.iconWithDots}>
-              <Text>{icon.name}</Text>
-              <View style={[styles.dot, {backgroundColor: icon.color}]} />
+        {[
+          {category: category1, color: CATEGORY1_COLOR},
+          {category: category2, color: CATEGORY2_COLOR},
+          {category: category3, color: DEFAULT_COLOR},
+        ].map((entry, index) => {
+          const matchingCategory =
+            todaySavingState?.todaySavingCategoryList.find(
+              (apiCategory: TodaySavingCategory) =>
+                apiCategory.categoryName === entry.category?.name,
+            );
+
+          return (
+            <View style={styles.savingDetails} key={index}>
+              <Text>
+                {entry.category?.name || '알 수 없음'}
+                <View style={styles.dotsContainer}>
+                  {/* totalSavingChance에 따라 점(dot) 추가 */}
+                  {Array.from({
+                    length: matchingCategory?.totalSavingChance || 0,
+                  }).map((_, dotIndex) => (
+                    <View
+                      key={dotIndex}
+                      style={[styles.dot, {backgroundColor: entry.color}]}
+                    />
+                  ))}
+                </View>
+              </Text>
+              <Text>
+                {matchingCategory
+                  ? matchingCategory.totalSavingCategoryMoney.toLocaleString()
+                  : '0'}
+                원
+              </Text>
             </View>
-            <Text style={styles.amountText}>
-              {savings[icon.name]?.toLocaleString() || '0'}원
-            </Text>
-          </View>
-        ))}
-        <View style={styles.savingDetails}>
-          <View style={styles.iconWithDots}>
-            <Text>기타</Text>
-            <View style={[styles.dot, {backgroundColor: DEFAULT_COLOR}]} />
-          </View>
-          <Text style={styles.amountText}>
-            {savings['기타'].toLocaleString()}원
-          </Text>
-        </View>
+          );
+        })}
       </View>
+
       <Modal visible={modalVisible} transparent={true} animationType="slide">
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
@@ -257,10 +514,20 @@ const AkkiScreen = () => {
                     style={styles.modalIcon}
                   />
                   <View style={styles.textBox}>
-                    <Text style={styles.textBoxText}>
-                      {selectedCategory.name}
-                    </Text>
+                    {selectedCategory?.name === '기타' ? (
+                      <TextInput
+                        style={styles.textBoxTextInput}
+                        placeholder="기타"
+                        value={detail}
+                        onChangeText={setDetail}
+                      />
+                    ) : (
+                      <Text style={styles.textBoxText}>
+                        {selectedCategory?.name}
+                      </Text>
+                    )}
                   </View>
+
                   <Text style={styles.modalText}>을(를)</Text>
                 </View>
                 <View style={styles.modalDetail}>
@@ -293,51 +560,81 @@ const AkkiScreen = () => {
       {/* 캘린더 컴포넌트 사용 */}
       <View style={styles.calendarSection}>
         <CalendarComponent
+          key={JSON.stringify(markedDates)}
           onSelectDate={handleSelectDate}
-          // selectedCategories={savings[selectedDate] || []}
-          selectedCategories={testData}
           onOpenBottomSheet={handleOpenBottomSheet}
+          savings={monthlySavingsState}
+          category1={category1}
+          category2={category2}
+          category3={category3}
+          memberNo={memberNo || 0}
+          markedDates={markedDates}
+          onMonthChange={handleMonthChange}
         />
 
         <AkkiBottomSheet
           isVisible={isBottomSheetVisible}
           onClose={handleCloseBottomSheet}
+          selectedDate={selectedDate}
+          setTodaySavingState={setTodaySavingState}
+          setMonthlySavingsState={setMonthlySavingsState}
+          setSavingDetailsState={setSavingDetailsState}
         />
+
         {/* 월별 총 아끼기 금액 */}
         <View style={styles.monthlyTotalSection}>
           <Text style={styles.monthlyTotalTitle}>이번 달 아끼기 누적액</Text>
-          <Text style={styles.monthlyTotalAmount}>총 37만 6,500원</Text>
+          <Text style={styles.monthlyTotalAmount}>
+            총{' '}
+            {monthlySavingsState
+              .reduce((sum, saving) => sum + saving.savingPrice, 0)
+              .toLocaleString() || '0'}
+            원
+          </Text>
           <Text style={styles.monthlyComparison}>
             지난 달 같은 기간보다{' '}
-            <Text style={styles.amountHighlight}>5만 8,000원</Text> 더 아꼈어요
+            <Text
+              style={[
+                styles.amountHighlight,
+                {color: difference > 0 ? '#98A2FF' : '#FF7B7B'},
+              ]}>
+              {Math.abs(difference).toLocaleString()}원
+            </Text>{' '}
+            {difference > 0 ? '더 아꼈어요' : '덜 아꼈어요'}
           </Text>
 
-          {/* 카테고리별 금액 및 이미지 */}
-          {selectedIcons.map(icon => (
-            <View style={styles.categoryTotal} key={icon.name}>
-              <View style={[styles.dot, {backgroundColor: icon.color}]} />
-              <Image source={icon.source} style={styles.categoryIcon} />
-              <View style={styles.categoryDetail}>
-                <Text style={styles.categoryName}>{icon.name} 14회</Text>
-                <Text style={styles.categoryAmount}>
-                  {savings[icon.name].toLocaleString()}원
-                </Text>
+          {[category1, category2, category3].map((category, index) => {
+            if (!category) return null;
+
+            const filteredSavings = monthlySavingsState.filter(
+              saving => saving.categoryName === category.name,
+            );
+            const totalAmount = filteredSavings.reduce(
+              (sum, saving) => sum + saving.savingPrice,
+              0,
+            );
+            const totalCount = filteredSavings.length;
+
+            return (
+              <View style={styles.categoryTotal} key={index}>
+                <View
+                  style={[
+                    styles.dot,
+                    {backgroundColor: category.color || DEFAULT_COLOR},
+                  ]}
+                />
+                <Image source={category.source} style={styles.categoryIcon} />
+                <View style={styles.categoryDetail}>
+                  <Text style={styles.categoryName}>
+                    {category.name} {totalCount}회
+                  </Text>
+                  <Text style={styles.categoryAmount}>
+                    {totalAmount.toLocaleString()}원
+                  </Text>
+                </View>
               </View>
-            </View>
-          ))}
-          <View style={styles.categoryTotal}>
-            <View style={[styles.dot, {backgroundColor: DEFAULT_COLOR}]} />
-            <Image
-              source={require('../assets/icons/plus.png')}
-              style={styles.categoryIcon}
-            />
-            <View style={styles.categoryDetail}>
-              <Text style={styles.categoryName}>기타 17회</Text>
-              <Text style={styles.categoryAmount}>
-                {savings['기타'].toLocaleString()}원
-              </Text>
-            </View>
-          </View>
+            );
+          })}
         </View>
       </View>
     </ScrollView>
@@ -405,6 +702,12 @@ const styles = StyleSheet.create({
     color: '#FF7B7B',
     textAlign: 'center',
   },
+  textBoxTextInput: {
+    fontSize: 16,
+    color: '#FF7B7B',
+    textAlign: 'center',
+    padding: -10,
+  },
   buttons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -450,9 +753,10 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
     position: 'absolute',
     top: '50%',
+    left: '50%',
+    marginLeft: -50,
   },
   carrotImage: {
-    position: 'absolute',
     width: 30,
     height: 30,
     resizeMode: 'contain',
@@ -521,19 +825,29 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     alignItems: 'center',
   },
+  loadingText: {
+    fontSize: 14,
+    color: '#808080',
+  },
+  errorText: {
+    fontSize: 14,
+    color: '#FF7B7B',
+  },
   iconWithDots: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   dotsContainer: {
     flexDirection: 'row',
-    marginLeft: 5,
+    alignItems: 'flex-start',
+    paddingLeft: 10,
+    // marginRight: 50,
   },
   dot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    marginHorizontal: 10,
+    marginHorizontal: 2,
   },
   amountText: {
     color: '#FF7B7B',
@@ -604,17 +918,6 @@ const styles = StyleSheet.create({
     color: '#000000',
     fontWeight: 'bold',
   },
-  // iconImage: {
-  //   width: 40,
-  //   height: 40,
-  //   resizeMode: 'contain',
-  // },
-  // iconText: {
-  //   marginTop: 5,
-  //   fontSize: 12,
-  //   textAlign: 'center',
-  //   color: '#808080',
-  // },
 });
 
 export default AkkiScreen;

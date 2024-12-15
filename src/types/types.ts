@@ -26,9 +26,11 @@ export type RootStackParamList = {
   Home: undefined;
   Bunny: undefined;
   Akki: undefined;
+  AkkiScreen: undefined;
   IconSelectScreen: undefined;
   AkkiStartScreen: undefined;
   MoreScreen: undefined;
+  Saving: undefined;
 };
 
 // TabBarIcon Props
@@ -84,6 +86,90 @@ export interface CreateUserResponse {
   success?: {
     id: number; // 사용자 ID
     message: string;
+  };
+  error?: {
+    message: string;
+  };
+};
+
+export interface SaveMoneyParams {
+  memberNo: number;
+  categoryId: number;
+  categoryName: string;
+  detail: string;
+  savingDay: string;
+  savingPrice: number;
+};
+
+export interface TodaySavingCategory {
+  categoryId: number;
+  categoryName: string;
+  totalSavingChance: number;
+  totalSavingCategoryMoney: number;
+};
+
+export interface TodaySavingResponse {
+  todayTotalMoney: number;
+  todaySavingCategoryList: TodaySavingCategory[];
+};
+
+export type MonthlySavingResponse = {
+  savingId: number;
+  categoryName: string;
+  savingChance: number;
+  savingDay: string;
+  savingPrice: number;
+}[];
+
+export type MonthlySaving = {
+  savingId: number;
+  categoryName: string;
+  savingChance: number;
+  savingDay: string;
+  savingPrice: number;
+};
+
+export type MarkedDates = {
+  [date: string]: {
+    marked?: boolean;
+    selectedColor?: string;
+    dots?: { key: string; color: string }[];
+  };
+};
+
+export interface DetailSaveMoney {
+  savingId: number;
+  categoryId: number;
+  categoryName: string;
+  detail: string;
+  savingPrice: number;
+  savingDay: string;
+}
+
+export interface SavingChance {
+  categoryId: number;
+  categoryName: string;
+  totalSavingChance: number;
+}
+
+export interface SaveDetailResponse {
+  resultType: string;
+  success: {
+    detailSaveMoneyList: DetailSaveMoney[];
+    totalSavingMoney: number;
+    savingChanceList: SavingChance[];
+    totalCategorySavingMoney: number;
+  };
+  error?: {
+    message: string;
+  };
+}
+
+export type DeleteSavingResponse = {
+  resultType: 'SUCCESS' | 'ERROR';
+  success?: {
+    message: string;
+    savingId: number;
   };
   error?: {
     message: string;

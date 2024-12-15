@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, {useState, useEffect, useMemo} from 'react';
+import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
 import moment from 'moment-timezone';
-import Svg, { Defs, LinearGradient, Stop, Rect, Circle } from 'react-native-svg';
+import Svg, {Defs, LinearGradient, Stop, Rect, Circle} from 'react-native-svg';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import SavingsModal from '../components/SavingModal';
-import { useTodayBunny } from '../hooks/useTodayBunny';
+import {useTodayBunny} from '../hooks/useTodayBunny';
 
 export default function HomeScreen() {
-  const { start, end, data, loading, error } = useTodayBunny(); // 수정된 훅 사용
+  const {start, end, data, loading, error} = useTodayBunny(); // 수정된 훅 사용
   const [elapsedTime, setElapsedTime] = useState(0);
   const [earnings, setEarnings] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
@@ -18,32 +18,28 @@ export default function HomeScreen() {
   const todayEarnings = ratePerMinute * 60 * 8;
 
   useEffect(() => {
-    if (!start || !end) return;
-
-    const totalWorkTime = (end.getTime() - start.getTime()) / (1000 * 60); // 분 단위 근무 시간
-    const totalEarnings = Math.floor(totalWorkTime * ratePerMinute); // 하루 총 금액 계산
-
+    if (!start || !end || ratePerMinute === 0) return;
+  
     const timer = setInterval(() => {
       const now = moment().tz('Asia/Seoul').toDate();
-
       if (now > end) {
         clearInterval(timer);
-        setEarnings(totalEarnings);
+        setElapsedTime((end.getTime() - start.getTime()) / 1000);
         setTimeLeft(0);
       } else if (now < start) {
-        setEarnings(0);
-        setTimeLeft(totalWorkTime * 60); // 남은 시간 설정
+        setElapsedTime(0);
+        setTimeLeft((end.getTime() - start.getTime()) / 1000);
       } else {
-        const elapsedMinutes = Math.floor((now.getTime() - start.getTime()) / (1000 * 60));
-        const currentEarnings = Math.floor(elapsedMinutes * ratePerMinute);
-        setEarnings(currentEarnings);
-        const remainingSeconds = Math.floor((end.getTime() - now.getTime()) / 1000);
-        setTimeLeft(remainingSeconds);
+        const elapsedSeconds = Math.floor((now.getTime() - start.getTime()) / 1000);
+        setElapsedTime(elapsedSeconds);
+        setEarnings(Math.floor((elapsedSeconds / 60) * ratePerMinute));
+        setTimeLeft(Math.floor((end.getTime() - now.getTime()) / 1000));
       }
     }, 1000);
-
+  
     return () => clearInterval(timer);
   }, [start, end, ratePerMinute]);
+  
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -61,14 +57,18 @@ export default function HomeScreen() {
   const month = currentDate.month() + 1;
   const dayOfWeekStr = currentDate.format('dddd');
 
-  const formattedElapsedTime =
-    elapsedTime >= 8 * 3600 ? formatTime(8 * 3600) : formatTime(elapsedTime);
-
+  const formattedElapsedTime = formatTime(elapsedTime);
+  
   const formattedTimeLeft =
     timeLeft <= 0 ? formatTime(0) : formatTime(timeLeft);
 
   const progress =
-    start && end ? elapsedTime / ((end.getTime() - start.getTime()) / 1000) : 0;
+    start && end
+      ? Math.max(
+          0,
+          Math.min(elapsedTime / ((end.getTime() - start.getTime()) / 1000), 1),
+        )
+      : 0;
 
   const toggleModal = () => {
     setIsModalVisible(!isModalVisible);
@@ -87,9 +87,9 @@ export default function HomeScreen() {
           width={200}
           height={200}
           viewBox="0 0 200 200"
-          style={{ transform: [{ rotate: '-90deg' }] }}>
+          style={{transform: [{rotate: '-90deg'}]}}>
           <Defs>
-            <LinearGradient id="grad" x1="0" y1="0" x2="1" y2="0">
+            <LinearGradient id="gradUnique" x1="0" y1="0" x2="1" y2="0">
               <Stop offset="0%" stopColor="#DECDFF" />
               <Stop offset="100%" stopColor="#BCECFF" />
             </LinearGradient>
@@ -106,7 +106,7 @@ export default function HomeScreen() {
             cx="100"
             cy="100"
             r="90"
-            stroke="url(#grad)"
+            stroke="url(#gradUnique)"
             strokeWidth="15"
             fill="none"
             strokeDasharray={565.48}
@@ -121,11 +121,7 @@ export default function HomeScreen() {
           </Text>
         </View>
         <View style={styles.earnings}>
-          {error ? (
-            <Text style={styles.earningsText}>급여 정보를 찾을 수 없습니다.</Text>
-          ) : (
-            <Text style={styles.earningsText}>{earnings.toLocaleString()}원</Text>
-          )}
+          <Text style={styles.earningsText}>{earnings.toLocaleString()}원</Text>
         </View>
       </View>
 

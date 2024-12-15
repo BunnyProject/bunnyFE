@@ -1,5 +1,6 @@
 import axiosInstance from './axiosInstance';
 import apiEndpoints from './apiEndpoints';
+import { CreateUserResponse } from '../types/types';
 
 // 사용자 닉네임으로 조회
 export const findUserByNickname = async (nickname: string) => {
@@ -22,10 +23,10 @@ export const createUser = async (userData: {
   workDay: string[];
   workingTime: { hour: number; minute: number; second: number };
   quittingTime: { hour: number; minute: number; second: number };
-}) => {
+}): Promise<CreateUserResponse> => {
   try {
     const response = await axiosInstance.post(apiEndpoints.user.createUser, userData);
-    return response.data;
+    return response.data as CreateUserResponse; // 반환값 타입 캐스팅
   } catch (error) {
     console.error('Error creating user:', error);
     throw error;
