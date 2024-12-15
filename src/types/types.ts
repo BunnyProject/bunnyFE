@@ -164,3 +164,14 @@ export interface SaveDetailResponse {
     message: string;
   };
 }
+
+export type DeleteSavingResponse = {
+  resultType: 'SUCCESS' | 'ERROR';
+  success?: {
+    message: string;
+    savingId: number;
+  };
+  error?: {
+    message: string;
+  };
+};
