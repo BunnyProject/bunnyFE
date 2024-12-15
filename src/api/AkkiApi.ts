@@ -2,6 +2,31 @@ import axiosInstance from './axiosInstance';
 import apiEndpoints from './apiEndpoints';
 import { SaveDetailResponse, SaveMoneyParams, TodaySavingResponse } from '../types/types';
 
+export const refetchAll = async (
+  memberNo: number,
+  startInclusive: string,
+  endInclusive: string,
+  targetDay: string
+) => {
+  try {
+    // 동시에 여러 API 호출
+    const [todaySaving, monthlySavings, savingDetails] = await Promise.all([
+      fetchTodaySaving(memberNo), // 오늘의 아끼기
+      getMonthlySavings(memberNo, startInclusive, endInclusive), // 월별 아끼기
+      getSavingDetails(memberNo, targetDay), // 특정 날짜의 아끼기 상세
+    ]);
+
+    return {
+      todaySaving,
+      monthlySavings,
+      savingDetails,
+    };
+  } catch (error) {
+    console.error('Error refetching all savings:', error);
+    throw error;
+  }
+};
+
 // 아끼기 금액 설정
 export const createSavingAmount = async (params: SaveMoneyParams) => {
   const { memberNo, ...savingData } = params; // memberNo를 헤더로, 나머지를 본문으로 전달

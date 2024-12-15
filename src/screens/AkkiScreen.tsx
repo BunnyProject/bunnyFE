@@ -15,10 +15,16 @@ import CalendarComponent from '../components/CalendarComponent';
 import AkkiBottomSheet from '../components/AkkiBottomSheet';
 import {iconData} from './IconSelectScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {MarkedDates, MonthlySaving, RootStackParamList} from '../types/types';
+import {
+  MarkedDates,
+  MonthlySaving,
+  RootStackParamList,
+  TodaySavingCategory,
+} from '../types/types';
 import {useSaveMoney} from '../hooks/useSaveMoney';
 import {useTodaySaving} from '../hooks/useTodaySaving';
 import {useMonthlySavings} from '../hooks/useMonthlySavings';
+import {refetchAll} from '../api/AkkiApi';
 
 type Carrot = {id: number; fallAnim: Animated.Value; position: number};
 type Category = {name: string; source: any; color?: string};
@@ -75,23 +81,18 @@ const AkkiScreen = () => {
   const [isBottomSheetVisible, setBottomSheetVisible] = useState(false);
   const [detail, setDetail] = useState('');
   const [memberNo, setMemberNo] = useState<number | null>(null);
-  const [accumulatedCarrots, setAccumulatedCarrots] = useState<Carrot[]>([]);
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1); // 현재 월
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear()); // 현재 연도
-  const {start, end} = getMonthStartAndEndDates(currentYear, currentMonth);
   const [markedDates, setMarkedDates] = useState({});
+  const [todaySavingState, setTodaySavingState] = useState<any>(null);
+  const [fallingCarrots, setFallingCarrots] = useState<Carrot[]>([]);
+  const [monthlySavingsState, setMonthlySavingsState] = useState<
+    MonthlySaving[]
+  >([]);
+  const [savingDetailsState, setSavingDetailsState] = useState<any>(null);
   const {start: prevStart, end: prevEnd} = getPreviousMonthRange(
     currentYear,
     currentMonth,
-  );
-
-  const {savings: currentSavings, loading: monthlyLoading} = useMonthlySavings(
-    memberNo || 0,
-    start,
-    end,
-    category1?.name || '',
-    category2?.name || '',
-    category3?.name || '',
   );
 
   const {savings: prevSavings} = useMonthlySavings(
@@ -104,7 +105,7 @@ const AkkiScreen = () => {
   );
 
   const calculateDifference = () => {
-    const currentTotal = currentSavings.reduce(
+    const currentTotal = monthlySavingsState.reduce(
       (sum, saving) => sum + saving.savingPrice,
       0,
     );
@@ -121,14 +122,39 @@ const AkkiScreen = () => {
     };
   };
 
-  const {difference, currentTotal, prevTotal} = calculateDifference();
+  const {difference} = calculateDifference();
 
-  const {todaySaving, loading, refetch} = useTodaySaving(memberNo || 0);
+  const {loading} = useTodaySaving(memberNo || 0);
   const {saveMoney} = useSaveMoney();
 
   const DEFAULT_COLOR = '#DECDFF';
   const CATEGORY1_COLOR = '#98A2FF';
   const CATEGORY2_COLOR = '#ACD7FF';
+
+  const addFallingCarrot = () => {
+    const bunnyLeft = 150; // 토끼 이미지의 대략적인 `left` 위치
+    const bunnyWidth = 100; // 토끼 이미지의 폭
+    const carrotStartMin = bunnyLeft - 40; // 토끼 이미지의 왼쪽 경계
+    const carrotStartMax = bunnyLeft + bunnyWidth + 40; // 토끼 이미지의 오른쪽 경계
+  
+    const randomX = Math.random() * (carrotStartMax - carrotStartMin) + carrotStartMin;
+  
+    const newCarrot = {
+      id: Date.now(),
+      fallAnim: new Animated.Value(-50), // 시작 위치
+      position: randomX, // 랜덤한 x축 위치 (초기값)
+    };
+
+    setFallingCarrots(prev => [...prev, newCarrot]);
+
+    // 애니메이션 시작
+    Animated.timing(newCarrot.fallAnim, {
+      toValue: 100,
+      duration: 1500, // 떨어지는 시간
+      useNativeDriver: true,
+    }).start(() => { setFallingCarrots(prev => [...prev]);
+    });
+  };
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -208,10 +234,10 @@ const AkkiScreen = () => {
   );
 
   useEffect(() => {
-    if (!loading && currentSavings ) {
+    if (!loading && monthlySavingsState) {
       const newMarkedDates: MarkedDates = {};
 
-      currentSavings .forEach((saving: MonthlySaving) => {
+      monthlySavingsState.forEach((saving: MonthlySaving) => {
         const date = saving.savingDay;
 
         if (!newMarkedDates[date]) {
@@ -232,7 +258,7 @@ const AkkiScreen = () => {
 
       setMarkedDates(newMarkedDates);
     }
-  }, [loading, currentSavings , getCategoryColor]);
+  }, [loading, monthlySavingsState, getCategoryColor]);
 
   const handleCategoryPress = (icon: Category) => {
     setSelectedCategory(icon);
@@ -252,6 +278,7 @@ const AkkiScreen = () => {
       }),
     ]).start();
   };
+
   const handleComplete = async () => {
     if (selectedCategory && inputAmount) {
       try {
@@ -267,6 +294,7 @@ const AkkiScreen = () => {
 
         const today = new Date().toISOString().split('T')[0];
 
+        // 저장 요청
         await saveMoney({
           memberNo: memberNo!,
           categoryId,
@@ -277,9 +305,20 @@ const AkkiScreen = () => {
         });
 
         if (memberNo) {
-          await refetch(memberNo);
-        }
+          const {start, end} = getMonthStartAndEndDates(
+            currentYear,
+            currentMonth,
+          );
+          const refetchedData = await refetchAll(memberNo!, start, end, today);
 
+          // 상태 업데이트
+          setTodaySavingState(refetchedData.todaySaving);
+          setMonthlySavingsState(refetchedData.monthlySavings);
+          setSavingDetailsState(refetchedData.savingDetails);
+        }
+        addFallingCarrot();
+
+        // 모달 닫기 및 입력 초기화
         setModalVisible(false);
         setInputAmount('');
         setDetail('');
@@ -302,9 +341,24 @@ const AkkiScreen = () => {
     setSelectedDate(date);
   };
 
-  const handleMonthChange = (month: number, year: number) => {
-    setCurrentMonth(month);
-    setCurrentYear(year);
+  const handleMonthChange = async (month: number, year: number) => {
+    try {
+      setCurrentMonth(month);
+      setCurrentYear(year);
+
+      const {start, end} = getMonthStartAndEndDates(year, month);
+
+      const refetchedData = await refetchAll(
+        memberNo!,
+        start,
+        end,
+        selectedDate,
+      );
+
+      setMonthlySavingsState(refetchedData.monthlySavings);
+    } catch (error) {
+      console.error('Error fetching monthly savings:', error);
+    }
   };
 
   return (
@@ -322,11 +376,18 @@ const AkkiScreen = () => {
             {transform: [{translateY: bunnyBounceAnim}]},
           ]}
         />
-        {accumulatedCarrots.map((carrot, index) => (
-          <Image
+        {fallingCarrots.map(carrot => (
+          <Animated.Image
             key={carrot.id}
             source={carrotImage}
-            style={[styles.carrotImage, {left: 200 + index * 20, bottom: 10}]}
+            style={[
+              styles.carrotImage,
+              {
+                position: 'absolute',
+                left: carrot.position, // 고정된 위치 사용
+                transform: [{translateY: carrot.fallAnim}],
+              },
+            ]}
           />
         ))}
       </View>
@@ -360,9 +421,8 @@ const AkkiScreen = () => {
       <View style={styles.savingSummary}>
         <View style={styles.titleContainer}>
           <Text style={styles.savingTitle}>오늘의 아끼기</Text>
-
           <Text style={styles.savingTotal}>
-            총 {todaySaving?.todayTotalMoney.toLocaleString() || '0'}원
+            총 {todaySavingState?.todayTotalMoney.toLocaleString() || '0'}원
           </Text>
         </View>
         {[
@@ -370,15 +430,18 @@ const AkkiScreen = () => {
           {category: category2, color: CATEGORY2_COLOR},
           {category: category3, color: DEFAULT_COLOR},
         ].map((entry, index) => {
-          const matchingCategory = todaySaving?.todaySavingCategoryList.find(
-            apiCategory => apiCategory.categoryName === entry.category?.name,
-          );
+          const matchingCategory =
+            todaySavingState?.todaySavingCategoryList.find(
+              (apiCategory: TodaySavingCategory) =>
+                apiCategory.categoryName === entry.category?.name,
+            );
 
           return (
             <View style={styles.savingDetails} key={index}>
               <Text>
                 {entry.category?.name || '알 수 없음'}
                 <View style={styles.dotsContainer}>
+                  {/* totalSavingChance에 따라 점(dot) 추가 */}
                   {Array.from({
                     length: matchingCategory?.totalSavingChance || 0,
                   }).map((_, dotIndex) => (
@@ -459,7 +522,7 @@ const AkkiScreen = () => {
         <CalendarComponent
           onSelectDate={handleSelectDate}
           onOpenBottomSheet={handleOpenBottomSheet}
-          savings={currentSavings }
+          savings={monthlySavingsState}
           category1={category1}
           category2={category2}
           category3={category3}
@@ -477,7 +540,7 @@ const AkkiScreen = () => {
           <Text style={styles.monthlyTotalTitle}>이번 달 아끼기 누적액</Text>
           <Text style={styles.monthlyTotalAmount}>
             총{' '}
-            {currentSavings 
+            {monthlySavingsState
               .reduce((sum, saving) => sum + saving.savingPrice, 0)
               .toLocaleString() || '0'}
             원
@@ -497,7 +560,7 @@ const AkkiScreen = () => {
           {[category1, category2, category3].map((category, index) => {
             if (!category) return null;
 
-            const filteredSavings = currentSavings .filter(
+            const filteredSavings = monthlySavingsState.filter(
               saving => saving.categoryName === category.name,
             );
             const totalAmount = filteredSavings.reduce(
@@ -644,9 +707,10 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
     position: 'absolute',
     top: '50%',
+    left: '50%',
+    marginLeft: -50, 
   },
   carrotImage: {
-    position: 'absolute',
     width: 30,
     height: 30,
     resizeMode: 'contain',
