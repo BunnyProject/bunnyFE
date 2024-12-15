@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Image,
   ScrollView,
+  Alert,
 } from 'react-native';
 import {Calendar} from 'react-native-calendars';
 import Modal from 'react-native-modal';
@@ -14,10 +15,11 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import {TextInput} from 'react-native-gesture-handler';
 import {MarkedDates, MonthlySaving} from '../types/types';
 import {useSaveDetail} from '../hooks/useSaveDetail';
+import {useDeleteSaving} from '../hooks/useDeleteSaving';
 
 type CalendarComponentProps = {
   onSelectDate: (date: string) => void;
-  onOpenBottomSheet: () => void;
+  onOpenBottomSheet: (date?: string) => void;
   savings: MonthlySaving[];
   category1: {name: string; source: any; color: string};
   category2: {name: string; source: any; color: string};
@@ -35,7 +37,7 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
   category1,
   category2,
   category3,
-  markedDates,
+  markedDates, // props에서 전달받음
   onMonthChange,
 }) => {
   const [isModalVisible, setModalVisible] = useState(false);
@@ -45,15 +47,53 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
     [key: number]: string;
   }>({});
   const {data} = useSaveDetail(memberNo, selectedDate);
+  const {handleDeleteSaving} = useDeleteSaving();
 
-  const handleDayPress = (day) => {
-    onSelectDate(day.dateString);
+  const handleDelete = async (
+    savingId: number,
+    categoryName: string,
+    savingPrice: number,
+  ) => {
+    try {
+      // Body 데이터 구성
+      const body = {
+        categoryName, // 카테고리 이름
+        savingPrice, // 저장된 금액
+      };
+
+      // handleDeleteSaving 호출
+      const response = await handleDeleteSaving(memberNo, savingId, body);
+
+      if (response?.resultType === 'SUCCESS') {
+        setSelectedSavings(prev =>
+          prev.filter(saving => saving.savingId !== savingId),
+        );
+        Alert.alert('삭제 완료', '항목이 성공적으로 삭제되었습니다.');
+
+        // 부모 컴포넌트에 알림하여 상태 갱신
+        onMonthChange(
+          new Date(selectedDate).getMonth() + 1,
+          new Date(selectedDate).getFullYear(),
+        );
+      } else {
+        Alert.alert(
+          '삭제 실패',
+          response?.error?.message ||
+            '알 수 없는 오류가 발생했습니다. 다시 시도해주세요.',
+        );
+      }
+    } catch (error) {
+      console.error('삭제 오류:', error);
+      Alert.alert(
+        '삭제 실패',
+        '알 수 없는 오류가 발생했습니다. 다시 시도해주세요.',
+      );
+    }
   };
 
-  const handleMonthChange = (month) => {
-    onMonthChange(month.month, month.year); // 월/년 정보 전달
+  const handleMonthChange = (month: {month: number; year: number}) => {
+    onMonthChange(month.month, month.year);
   };
-
 
   const toggleModal = () => {
     setModalVisible(!isModalVisible);
@@ -76,11 +116,9 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
     return '#DECDFF';
   };
 
-  // 금액 업데이트
   const updateAmount = (id: string, amount: string) => {
     setEditableAmounts(prev => ({...prev, [id]: amount}));
   };
-  
 
   return (
     <View>
@@ -88,7 +126,7 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
         onDayPress={onDayPress}
         onMonthChange={handleMonthChange}
         markedDates={markedDates || {}}
-         markingType="multi-dot"
+        markingType="multi-dot"
         theme={{
           selectedDayBackgroundColor: '#98A2FF',
           todayTextColor: '#98A2FF',
@@ -127,7 +165,9 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
                     </Text>
                   </View>
                   <TouchableOpacity
-                    onPress={onOpenBottomSheet}
+                    onPress={() => {
+                      onOpenBottomSheet(selectedDate); // Open the bottom sheet
+                    }}
                     style={styles.addButtonContainer}>
                     <View style={styles.addButtonContent}>
                       <Ionicons name="add" size={20} color="#98A2FF" />
@@ -139,13 +179,11 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
                   {[category1, category2, category3].map((category, index) => {
                     if (!category) return null;
 
-                    // API 데이터에서 해당 카테고리 이름과 detail이 일치하는 항목 찾기
                     const matchingDetails =
                       data?.success.detailSaveMoneyList.filter(item =>
                         item.detail.includes(category.name),
                       );
 
-                    // 매칭된 금액의 합계 계산
                     const totalAmount = matchingDetails
                       ? matchingDetails.reduce(
                           (sum, item) => sum + item.savingPrice,
@@ -153,7 +191,6 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
                         )
                       : 0;
 
-                    // 매칭된 횟수 계산
                     const totalCount = matchingDetails
                       ? matchingDetails.length
                       : 0;
@@ -185,7 +222,6 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
                   })}
                 </View>
 
-                {/* 시간 순으로 정렬된 세부 내역 */}
                 {data?.success.detailSaveMoneyList
                   ?.sort(
                     (a, b) =>
@@ -199,7 +235,6 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
                     return (
                       <View style={styles.detailRow} key={item.savingId}>
                         <View style={styles.detailText}>
-                          {/* 각 카테고리 색상 및 이름 표시 */}
                           <View
                             style={[
                               styles.dot,
@@ -213,7 +248,6 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
                             {displayCategoryName}
                           </Text>
 
-                          {/* 금액 수정 가능 */}
                           <TextInput
                             style={styles.amountText}
                             keyboardType="numeric"
@@ -235,7 +269,11 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
                         {/* 삭제 버튼 */}
                         <TouchableOpacity
                           onPress={() =>
-                            console.log(`${item.savingId} 삭제 클릭`)
+                            handleDelete(
+                              item.savingId,
+                              item.detail,
+                              item.savingPrice,
+                            )
                           }>
                           <Ionicons name="trash-outline" size={20} />
                         </TouchableOpacity>
