@@ -12,7 +12,7 @@ export type RootStackParamList = {
   };
   Loading: undefined;
   Result: {
-    userId: number;
+    // userId: number;
     name: string;
     birthDate: string;
     gender: string;
@@ -174,4 +174,43 @@ export type DeleteSavingResponse = {
   error?: {
     message: string;
   };
+};
+
+// types/apiTypes.ts
+export type TargetList = {
+  categoryId: number;
+  categoryName: string;
+  targetAmount: number;
+  onePrice: number;
+};
+
+export type PostTargetRequest = {
+  totalTargetAmount: number;
+  targetList: TargetList[];
+};
+
+export type PostTargetResponse = {
+  resultType: 'SUCCESS' | 'FAIL';
+  success?: {
+    targetId: number;
+    totalTargetAmount: number;
+    targetList: TargetList[];
+  };
+  error?: {
+    message: string;
+  };
+};
+
+export type Category = {
+  id: number;
+  name: string;
+  source: any;
+  unitPrice: number;
+  defaultFrequency?: number;
+};
+
+export type SavingsModalProps = {
+  isVisible: boolean;
+  onClose: () => void;
+  categories: Category[];
 };

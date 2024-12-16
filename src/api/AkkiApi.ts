@@ -13,7 +13,6 @@ export const refetchAll = async (
   targetDay: string,
 ) => {
   try {
-    // 동시에 여러 API 호출
     const [todaySaving, monthlySavings, savingDetails] = await Promise.all([
       fetchTodaySaving(memberNo), // 오늘의 아끼기
       getMonthlySavings(memberNo, startInclusive, endInclusive), // 월별 아끼기
