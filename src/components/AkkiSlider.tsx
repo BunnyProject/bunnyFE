@@ -3,22 +3,24 @@ import { View, Text, StyleSheet } from 'react-native';
 import Slider from '@react-native-community/slider';
 import LinearGradient from 'react-native-linear-gradient';
 
-// Props 타입 정의
-interface CustomSliderProps {
+type CustomSliderProps = {
   totalGoal: number;
-  unit: string;
   startLabel: string;
   endLabel: string;
   step: number;
   defaultValue: number;
-}
+  unit: string;
+  onValueChange: (value: number) => void;
+};
 
-export default function CustomSlider({
+export default function AkkiSlider({
   totalGoal,
   startLabel,
   endLabel,
   step,
   defaultValue,
+  unit,
+  onValueChange,
 }: CustomSliderProps) {
   const [sliderValue, setSliderValue] = useState(defaultValue);
 
@@ -49,7 +51,10 @@ export default function CustomSlider({
           maximumValue={step}
           step={1}
           value={sliderValue}
-          onValueChange={(value) => setSliderValue(value)}
+          onValueChange={(value) => {
+            setSliderValue(value); // 로컬 상태 업데이트
+            onValueChange(value); // 부모 컴포넌트로 값 전달
+          }}
           thumbImage={require('../assets/thumb.png')}
           minimumTrackTintColor="transparent"
           maximumTrackTintColor="transparent"
@@ -71,7 +76,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: '#fff',
+    // backgroundColor: '#fff',
   },
   sliderWrapper: {
     position: 'relative',
@@ -79,6 +84,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
     height: 40,
+    paddingHorizontal: 10, 
   },
   sliderTrackContainer: {
     position: 'absolute',
@@ -101,6 +107,7 @@ const styles = StyleSheet.create({
   slider: {
     width: '100%',
     height: 40,
+    marginHorizontal: -10,
   },
   dateText: {
     fontSize: 12,
@@ -108,13 +115,12 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   currentEarnings: {
-    fontSize: 10,
+    fontSize: 14,
     color: '#8c9eff',
     fontWeight: 'bold',
-    marginLeft: 200,
   },
   totalEarnings: {
-    fontSize: 10,
+    fontSize: 14,
     color: '#000000',
     fontWeight: 'bold',
   },
@@ -126,7 +132,6 @@ const styles = StyleSheet.create({
   earningText: {
     flexDirection: 'row',
     width: '100%',
-    textAlign: 'right',
     justifyContent: 'flex-end',
   },
 });

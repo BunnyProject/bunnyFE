@@ -1,25 +1,77 @@
-import React, {useState, useEffect, useMemo} from 'react';
+import React, {useState, useEffect} from 'react';
 import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
 import moment from 'moment-timezone';
 import Svg, {Defs, LinearGradient, Stop, Rect, Circle} from 'react-native-svg';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import SavingsModal from '../components/SavingModal';
 import {useTodayBunny} from '../hooks/useTodayBunny';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {PostTargetRequest} from '../types/types';
+// import {NavigationProp, useNavigation} from '@react-navigation/native';
+import {StackNavigationProp} from '@react-navigation/stack';
+import {RootStackParamList} from '../types/types';
+// import {iconData} from './IconSelectScreen';
 
-export default function HomeScreen() {
-  const {start, end, data, loading, error} = useTodayBunny(); // 수정된 훅 사용
+type HomeScreenProps = {
+  navigation: StackNavigationProp<RootStackParamList, 'Home'>;
+};
+
+// const getMemberNo = async (): Promise<number | null> => {
+//   const userId = await AsyncStorage.getItem('userId');
+//   return userId ? Number(userId) : null;
+// };
+
+export default function HomeScreen({navigation}: HomeScreenProps) {
+  const {start, end, data, loading} = useTodayBunny();
   const [elapsedTime, setElapsedTime] = useState(0);
   const [earnings, setEarnings] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [monthlyGoal, setMonthlyGoal] = useState(250000);
+  const [monthlyGoal, setMonthlyGoal] = useState(0);
 
   const ratePerMinute = data?.minMoney || 0;
   const todayEarnings = ratePerMinute * 60 * 8;
 
+  const loadMonthlyTarget = async () => {
+    try {
+      const savedTarget = await AsyncStorage.getItem('totalTargetAmount');
+      if (savedTarget) {
+        setMonthlyGoal(Number(savedTarget)); // 문자열을 숫자로 변환
+      } else {
+        setMonthlyGoal(0); // 저장된 목표가 없으면 기본값 설정
+      }
+    } catch (error) {
+      console.error('Failed to load monthly target:', error);
+      setMonthlyGoal(0); // 오류 발생 시 기본값 설정
+    }
+  };
+  
+  const handleEditTarget = async () => {
+    try {
+      // selectedIcons 확인
+      const selectedIcons = await AsyncStorage.getItem('selectedIcons');
+      if (!selectedIcons) {
+        // selectedIcons가 없으면 AkkiStartScreen으로 이동
+        navigation.navigate('AkkiStartScreen');
+        return;
+      }
+
+      // selectedIcons가 있으면 모달 열기
+      setIsModalVisible(true);
+    } catch (error) {
+      console.error('Failed to check selectedIcons:', error);
+      navigation.navigate('AkkiStartScreen'); // 오류 발생 시 안전하게 AkkiStartScreen으로 이동
+    }
+  };
+
+  // 컴포넌트 마운트 시 목표 로드
+  useEffect(() => {
+    loadMonthlyTarget();
+  }, []);
+
   useEffect(() => {
     if (!start || !end || ratePerMinute === 0) return;
-  
+
     const timer = setInterval(() => {
       const now = moment().tz('Asia/Seoul').toDate();
       if (now > end) {
@@ -30,16 +82,17 @@ export default function HomeScreen() {
         setElapsedTime(0);
         setTimeLeft((end.getTime() - start.getTime()) / 1000);
       } else {
-        const elapsedSeconds = Math.floor((now.getTime() - start.getTime()) / 1000);
+        const elapsedSeconds = Math.floor(
+          (now.getTime() - start.getTime()) / 1000,
+        );
         setElapsedTime(elapsedSeconds);
         setEarnings(Math.floor((elapsedSeconds / 60) * ratePerMinute));
         setTimeLeft(Math.floor((end.getTime() - now.getTime()) / 1000));
       }
     }, 1000);
-  
+
     return () => clearInterval(timer);
   }, [start, end, ratePerMinute]);
-  
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -58,7 +111,7 @@ export default function HomeScreen() {
   const dayOfWeekStr = currentDate.format('dddd');
 
   const formattedElapsedTime = formatTime(elapsedTime);
-  
+
   const formattedTimeLeft =
     timeLeft <= 0 ? formatTime(0) : formatTime(timeLeft);
 
@@ -130,13 +183,15 @@ export default function HomeScreen() {
       <View style={styles.monthlyGoalContainer}>
         <View style={styles.goalTextContainer}>
           <Text style={styles.currentGoal}>
-            {todayEarnings.toLocaleString()}원
+            {monthlyGoal ? `${todayEarnings.toLocaleString()}원` : '???'}
           </Text>
           <View style={styles.goalTextWrapper}>
             <Text style={styles.totalGoal}>
-              {monthlyGoal.toLocaleString()}원
+              {monthlyGoal ? `${monthlyGoal.toLocaleString()}원` : '???'}
             </Text>
-            <TouchableOpacity style={styles.iconButton} onPress={toggleModal}>
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={handleEditTarget}>
               <Icon name="pencil" size={15} color="#4f4f4f" />
             </TouchableOpacity>
           </View>
@@ -171,7 +226,10 @@ export default function HomeScreen() {
           </Svg>
         </View>
       </View>
-      <SavingsModal isVisible={isModalVisible} onClose={toggleModal} />
+      <SavingsModal
+        isVisible={isModalVisible}
+        onClose={toggleModal}
+      />
     </View>
   );
 }

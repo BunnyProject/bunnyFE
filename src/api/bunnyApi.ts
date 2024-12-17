@@ -1,13 +1,11 @@
 import axiosInstance from './axiosInstance';
 import apiEndpoints from './apiEndpoints';
-import { bunnyResponse, HomeMoneyResponse } from '../types/types';
-
-// 타입 정의
-interface MonthlyTargetData {
-  totalTargetAmount: number;
-  targetList?: { categoryId: number; categoryName: string; targetAmount: number; onePrice: number }[];
-  updateTargetList?: { categoryId: number; targetAmount: number; onePrice: number }[];
-}
+import {
+  bunnyResponse,
+  HomeMoneyResponse,
+  PostTargetRequest,
+  PostTargetResponse,
+} from '../types/types';
 
 // 공통 에러 처리 함수
 const handleError = (error: any) => {
@@ -19,10 +17,12 @@ const handleError = (error: any) => {
 };
 
 // 오늘의 버니 조회
-export const getTodayBunny = async (memberNo: number): Promise<bunnyResponse> => {
+export const getTodayBunny = async (
+  memberNo: number,
+): Promise<bunnyResponse> => {
   try {
     const response = await axiosInstance.get(apiEndpoints.bunny.getTodayBunny, {
-      headers: { 'member-no': memberNo },
+      headers: {'member-no': memberNo},
     });
     return response.data;
   } catch (error) {
@@ -33,12 +33,16 @@ export const getTodayBunny = async (memberNo: number): Promise<bunnyResponse> =>
 // 한달 목표 수정
 export const updateMonthlyTarget = async (
   memberNo: number,
-  targetData: MonthlyTargetData & { targetId: number }
+  targetData: PostTargetRequest & {targetId: number},
 ) => {
   try {
-    const response = await axiosInstance.put(apiEndpoints.bunny.updateMonthlyTarget, targetData, {
-      headers: { 'member-no': memberNo },
-    });
+    const response = await axiosInstance.put(
+      apiEndpoints.bunny.updateMonthlyTarget,
+      targetData,
+      {
+        headers: {'member-no': memberNo},
+      },
+    );
     return response.data;
   } catch (error) {
     throw new Error(handleError(error));
@@ -46,11 +50,18 @@ export const updateMonthlyTarget = async (
 };
 
 // 한달 목표 생성
-export const createMonthlyTarget = async (memberNo: number, targetData: MonthlyTargetData) => {
+export const createMonthlyTarget = async (
+  memberNo: number,
+  targetData: PostTargetRequest,
+): Promise<PostTargetResponse> => {
   try {
-    const response = await axiosInstance.post(apiEndpoints.bunny.createMonthlyTarget, targetData, {
-      headers: { 'member-no': memberNo },
-    });
+    const response = await axiosInstance.post<PostTargetResponse>(
+      apiEndpoints.bunny.createMonthlyTarget,
+      targetData,
+      {
+        headers: {'member-no': memberNo},
+      },
+    );
     return response.data;
   } catch (error) {
     throw new Error(handleError(error));
@@ -58,10 +69,12 @@ export const createMonthlyTarget = async (memberNo: number, targetData: MonthlyT
 };
 
 // 홈 화면 급여 조회
-export const getHomeSalary = async (memberNo: number): Promise<HomeMoneyResponse> => {
+export const getHomeSalary = async (
+  memberNo: number,
+): Promise<HomeMoneyResponse> => {
   try {
     const response = await axiosInstance.get(apiEndpoints.bunny.getHomeSalary, {
-      headers: { 'member-no': memberNo },
+      headers: {'member-no': memberNo},
     });
     return response.data;
   } catch (error) {
@@ -70,11 +83,17 @@ export const getHomeSalary = async (memberNo: number): Promise<HomeMoneyResponse
 };
 
 // 한달 목표 삭제
-export const deleteMonthlyTarget = async (memberNo: number, targetId: number) => {
+export const deleteMonthlyTarget = async (
+  memberNo: number,
+  targetId: number,
+) => {
   try {
-    const response = await axiosInstance.delete(apiEndpoints.bunny.deleteMonthlyTarget(targetId), {
-      headers: { 'member-no': memberNo },
-    });
+    const response = await axiosInstance.delete(
+      apiEndpoints.bunny.deleteMonthlyTarget(targetId),
+      {
+        headers: {'member-no': memberNo},
+      },
+    );
     return response.data;
   } catch (error) {
     throw new Error(handleError(error));
