@@ -14,7 +14,7 @@ import AkkiSlider from './AkkiSlider';
 import {useMonthlyTarget} from '../hooks/useMonthlyTarget';
 import {Category} from '../types/types';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons'
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 type SavingsModalProps = {
   isVisible: boolean;
@@ -232,9 +232,9 @@ export default function SavingsModal({isVisible, onClose}: SavingsModalProps) {
       onRequestClose={onClose}>
       <View style={styles.modalContainer}>
         <View style={styles.modalContent}>
-        <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-        <MaterialIcons name="close" size={20} color="#FF0000" />
-      </TouchableOpacity>
+          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+            <MaterialIcons name="close" size={20} color="#FF0000" />
+          </TouchableOpacity>
           <Text style={styles.modalTitle}>이번 달엔 얼마나 아낄까요?</Text>
           <Text style={styles.modalSubtitle}>
             아끼고 싶은 목표 금액을 입력해주세요.
@@ -250,46 +250,49 @@ export default function SavingsModal({isVisible, onClose}: SavingsModalProps) {
             <View key={category.name} style={styles.categoryContainer}>
               <View style={styles.categoryHeader}>
                 <Image source={category.source} style={styles.categoryIcon} />
-                <View style={styles.estimatedAmountContainer}>
+                <View style={styles.categoryColumn}>
+                  <Text style={styles.categoryTotal}>
+                    {sliderValues[category.name] * category.unitPrice || 0}원
+                  </Text>
                   <Text style={styles.estimatedAmount}>
                     {category.name} {sliderValues[category.name] || 0}회 (
-                  </Text>
-                  {editMode[category.id] ? (
-                    <TextInput
-                      style={styles.unitPriceInput}
-                      keyboardType="numeric"
-                      defaultValue={
-                        category.unitPrice > 0
-                          ? category.unitPrice.toString()
-                          : '0'
-                      }
-                      onEndEditing={e =>
-                        handleUnitPriceChange(
-                          Number(e.nativeEvent.text),
-                          category.id,
-                        )
-                      }
-                      autoFocus
-                    />
-                  ) : (
-                    <Text style={styles.unitPriceText}>
-                      {category.unitPrice > 0
-                        ? category.unitPrice.toLocaleString()
-                        : '???'}
-                    </Text>
-                  )}
-                  <Text style={styles.estimatedAmount}>
-                    원
-                    <TouchableOpacity
-                      onPress={() => toggleEditMode(category.id)}>
-                      <Icon
-                        name="pencil"
-                        size={14}
-                        color="#7d7d7d"
-                        style={styles.pencilIcon}
+                    {editMode[category.id] ? (
+                      <TextInput
+                        style={styles.unitPriceInput}
+                        keyboardType="numeric"
+                        defaultValue={
+                          category.unitPrice > 0
+                            ? category.unitPrice.toString()
+                            : '0'
+                        }
+                        onEndEditing={e =>
+                          handleUnitPriceChange(
+                            Number(e.nativeEvent.text),
+                            category.id,
+                          )
+                        }
+                        autoFocus
                       />
-                    </TouchableOpacity>
-                    )
+                    ) : (
+                      <Text style={styles.unitPriceText}>
+                        {category.unitPrice > 0
+                          ? category.unitPrice.toLocaleString()
+                          : '???'}
+                      </Text>
+                    )}
+                    <Text style={styles.estimatedAmount}>
+                      원
+                      <TouchableOpacity
+                        onPress={() => toggleEditMode(category.id)}>
+                        <Icon
+                          name="pencil"
+                          size={14}
+                          color="#7d7d7d"
+                          style={styles.pencilIcon}
+                        />
+                      </TouchableOpacity>
+                      )
+                    </Text>
                   </Text>
                 </View>
               </View>
@@ -305,9 +308,12 @@ export default function SavingsModal({isVisible, onClose}: SavingsModalProps) {
                   handleSliderChange(value, category.name)
                 }
               />
+              <View style={styles.sliderLabels}>
+                <Text style={styles.sliderLabelText}>0회</Text>
+                <Text style={styles.sliderLabelText}>100회</Text>
+              </View>
             </View>
           ))}
-
           <TouchableOpacity
             style={styles.saveButton}
             onPress={handleSubmit}
@@ -365,13 +371,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 10,
   },
+  categoryDetails: {
+    flexDirection: 'column',
+    marginLeft: 10,
+  },
+  categoryTotal: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 5,
+  },
+  categoryInfo: {
+    fontSize: 14,
+    color: '#555',
+  },
+
   categoryColumn: {
     flexDirection: 'column',
+    marginBottom: -12,
   },
   categoryIcon: {
-    width: 30,
-    height: 30,
-    marginRight: 20,
+    width: 35,
+    height: 35,
+    marginRight: 10,
+    marginTop: 10,
+    // paddingHorizontal: 10,
     resizeMode: 'contain',
   },
   categoryName: {
@@ -381,7 +405,6 @@ const styles = StyleSheet.create({
   estimatedAmount: {
     fontSize: 14,
     color: '#555',
-    marginBottom: 2,
   },
   saveButton: {
     alignSelf: 'center',
@@ -404,23 +427,10 @@ const styles = StyleSheet.create({
     color: '#555',
   },
   estimatedAmountContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 5,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    marginLeft: 10,
   },
-  // estimatedAmount: {
-  //   fontSize: 14,
-  //   color: '#555',
-  // },
-  // unitPriceInput: {
-  //   borderBottomWidth: 1,
-  //   borderColor: '#aaa',
-  //   width: 60,
-  //   textAlign: 'center',
-  //   fontSize: 14,
-  //   marginLeft: 5,
-  //   color: '#333',
-  // },
   unitPriceText: {
     fontSize: 14,
     color: '#555',
@@ -436,5 +446,15 @@ const styles = StyleSheet.create({
     top: 10,
     right: 10,
     zIndex: 1,
+  },
+  sliderLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: -10,
+    paddingHorizontal: 40,
+  },
+  sliderLabelText: {
+    fontSize: 12,
+    color: '#9a9a9a',
   },
 });
