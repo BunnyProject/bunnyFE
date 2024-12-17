@@ -55,7 +55,6 @@ export default function AkkiSlider({
             setSliderValue(value); // 로컬 상태 업데이트
             onValueChange(value); // 부모 컴포넌트로 값 전달
           }}
-          thumbTintColor="#ffffff"
           thumbImage={require('../assets/thumb.png')}
           minimumTrackTintColor="transparent"
           maximumTrackTintColor="transparent"

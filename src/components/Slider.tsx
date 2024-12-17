@@ -50,8 +50,7 @@ export default function CustomSlider({
           step={1}
           value={sliderValue}
           onValueChange={(value) => setSliderValue(value)}
-          thumbTintColor="#ffffff"
-          thumbImage={require('../assets/thumb.png')} // 원하는 크기의 이미지 사용
+          thumbImage={require('../assets/thumb.png')}
           minimumTrackTintColor="transparent"
           maximumTrackTintColor="transparent"
         />
