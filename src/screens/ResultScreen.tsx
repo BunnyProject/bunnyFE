@@ -15,7 +15,17 @@ type Props = {
 };
 
 const ResultScreen = ({ navigation, route }: Props) => {
-  const { name, birthDate, gender, job, salary, workDays, startTime, endTime } = route.params;
+  const params = route.params ?? {
+    name: '',
+    birthDate: '',
+    gender: '',
+    job: '',
+    salary: '',
+    workDays: [],
+    startTime: '',
+    endTime: '',
+  };
+  const { name, birthDate, gender, job, salary, workDays, startTime, endTime } = params;
   const { isLoading, createNewUser } = useCreateUser();
 
   const dayMapping: { [key: string]: string } = {

@@ -1,7 +1,7 @@
 import React, {useEffect, useRef} from 'react';
 import {View, Image, Text, StyleSheet, Animated} from 'react-native';
 import {StackNavigationProp} from '@react-navigation/stack';
-import {RootStackParamList} from '../navigation/MainNavigation';
+import { RootStackParamList } from '../types/types';
 
 type LoadingScreenNavigationProp = StackNavigationProp<
   RootStackParamList,

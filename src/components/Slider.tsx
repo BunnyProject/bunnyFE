@@ -3,7 +3,6 @@ import { View, Text, StyleSheet } from 'react-native';
 import Slider from '@react-native-community/slider';
 import LinearGradient from 'react-native-linear-gradient';
 
-// Props 타입 정의
 interface CustomSliderProps {
   totalGoal: number;
   unit: string;

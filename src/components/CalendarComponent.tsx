@@ -42,7 +42,7 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
 }) => {
   const [isModalVisible, setModalVisible] = useState(false);
   const [selectedDate, setSelectedDate] = useState('');
-  const [selectedSavings, setSelectedSavings] = useState<MonthlySaving[]>([]);
+  const [_selectedSavings, setSelectedSavings] = useState<MonthlySaving[]>([]);
   const [editableAmounts, setEditableAmounts] = useState<{
     [key: number]: string;
   }>({});

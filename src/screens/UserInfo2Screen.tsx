@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import {Dropdown} from 'react-native-element-dropdown';
 import {StackNavigationProp} from '@react-navigation/stack';
-import {RouteProp} from '@react-navigation/native'; // RouteProp 추가
+import {RouteProp} from '@react-navigation/native';
 import {RootStackParamList} from '../types/types';
 
 type Info2ScreenNavigationProp = StackNavigationProp<
@@ -21,10 +21,9 @@ type Info2ScreenRouteProp = RouteProp<RootStackParamList, 'UserInfo2'>;
 
 type Props = {
   navigation: Info2ScreenNavigationProp;
-  route: Info2ScreenRouteProp; // route 추가
+  route: Info2ScreenRouteProp;
 };
 
-// 10분 단위로 시간을 선택할 수 있는 데이터 생성
 const timeData = Array.from({length: 24 * 6}, (_, i) => {
   const hours = Math.floor(i / 6)
     .toString()
@@ -44,6 +43,15 @@ const salaryTypeData = [
 ];
 
 export default function Info2Screen({navigation, route}: Props) {
+  const params = route.params ?? {
+    name: '',
+    birthDate: '',
+    gender: '',
+    job: '',
+  };
+
+  const { name, birthDate, gender, job } = params;
+
   const [salaryType, setSalaryType] = useState('월급');
   const [salary, setSalary] = useState('');
   const [workDays, setWorkDays] = useState<string[]>([]);
@@ -70,7 +78,7 @@ export default function Info2Screen({navigation, route}: Props) {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>반갑습니다. {route.params.name} 님.</Text>
+        <Text style={styles.title}>반갑습니다. {name} 님.</Text>
         <Text style={styles.subtitle}>
           수령하시는 급여와 근무시간을 알려주세요.
         </Text>
@@ -206,10 +214,10 @@ export default function Info2Screen({navigation, route}: Props) {
           style={styles.nextButton}
           onPress={() =>
             navigation.navigate('Result', {
-              name: route.params.name, // UserInfoScreen에서 전달받은 데이터
-              birthDate: route.params.birthDate,
-              gender: route.params.gender,
-              job: route.params.job,
+              name: name,
+              birthDate: birthDate,
+              gender: gender,
+              job: job,
               salary,
               workDays,
               startTime,
@@ -353,6 +361,6 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 16,
-    marginBottom: 8,
+    marginBottom: 1,
   },
 });

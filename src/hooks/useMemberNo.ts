@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const useMemberNo = () => {
   const [memberNo, setMemberNo] = useState<number | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // 로딩 상태
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchMemberNo = async () => {

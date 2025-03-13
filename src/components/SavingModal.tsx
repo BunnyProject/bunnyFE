@@ -40,7 +40,7 @@ export default function SavingsModal({isVisible, onClose}: SavingsModalProps) {
   const [editMode, setEditMode] = useState<Record<number, boolean>>({});
   const [sliderValues, setSliderValues] = useState<Record<string, number>>({});
   const [memberNo, setMemberNo] = useState<number | null>(null);
-  const {loading, error, submitMonthlyTarget} = useMonthlyTarget(memberNo ?? 0);
+  const {loading, submitMonthlyTarget} = useMonthlyTarget(memberNo ?? 0);
 
   const toggleEditMode = (categoryId: number) => {
     setEditMode(prev => ({...prev, [categoryId]: !prev[categoryId]}));
@@ -55,7 +55,7 @@ export default function SavingsModal({isVisible, onClose}: SavingsModalProps) {
       ),
     );
     updateTotalTargetAmount(sliderValues);
-    toggleEditMode(categoryId); // 수정 모드 종료
+    toggleEditMode(categoryId);
   };
 
   const updateTotalTargetAmount = (
@@ -76,7 +76,6 @@ export default function SavingsModal({isVisible, onClose}: SavingsModalProps) {
       const updatedValues = {...prevValues};
       updatedValues[categoryName] = value;
 
-      // 모든 슬라이더 변경 시 총 금액 반영
       updateTotalTargetAmount(updatedValues);
 
       return updatedValues;
@@ -166,7 +165,7 @@ export default function SavingsModal({isVisible, onClose}: SavingsModalProps) {
           setCategories(selectedCategories);
 
           const totalAmount = parseInt(savedTotalAmount || '0', 10);
-          calculateInitialSliderValues(totalAmount, selectedCategories);
+          calculateInitialSliderValues(totalAmount);
         }
       } catch (error) {
         console.error('Failed to load data:', error);
@@ -197,6 +196,7 @@ export default function SavingsModal({isVisible, onClose}: SavingsModalProps) {
       );
       const targetList = filteredCategories.map(category => ({
         categoryId: category.id,
+        categoryName: category.name,
         targetAmount: sliderValues[category.name] || 0,
         onePrice: category.unitPrice,
       }));
@@ -395,7 +395,6 @@ const styles = StyleSheet.create({
     height: 35,
     marginRight: 10,
     marginTop: 10,
-    // paddingHorizontal: 10,
     resizeMode: 'contain',
   },
   categoryName: {

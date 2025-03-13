@@ -1,23 +1,25 @@
 import { useNavigation } from '@react-navigation/native';
 import React from 'react';
 import { View, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import { RootStackParamList } from '../types/types';
+import { StackNavigationProp } from '@react-navigation/stack';
+
+type HeaderNavigationProp = StackNavigationProp<RootStackParamList, 'MoreScreen'>;
 
 const Header = () => {
-  const navigation = useNavigation();
+
+  const navigation = useNavigation<HeaderNavigationProp>();
+
   return (
     <View style={styles.headerContainer}>
-      {/* 왼쪽 빈 공간 */}
       <View style={styles.leftSpace} />
 
-      {/* 가운데 로고 */}
       <View style={styles.logoContainer}>
         <Image source={require('../assets/logo.png')} style={styles.logo} />
       </View>
-
-      {/* 오른쪽 햄버거 메뉴 */}
       <TouchableOpacity
         style={styles.menuButton}
-        onPress={() => navigation.navigate('MoreScreen')} // 햄버거 메뉴 클릭 시 MoreScreen으로 이동
+        onPress={() => navigation.navigate('MoreScreen')}
       >
         <Image source={require('../assets/menu.png')} style={styles.menuIcon} />
       </TouchableOpacity>
@@ -33,13 +35,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 10,
-    // borderBottomWidth: 1,
-    // borderBottomColor: '#ddd',
-    // shadowColor: '#000',
-    // shadowOffset: { width: 0, height: 2 },
-    // shadowOpacity: 0.1,
-    // shadowRadius: 4,
-    // elevation: 3, 
   },
   leftSpace: {
     flex: 1,
@@ -49,8 +44,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
-    width: 120, // 로고의 너비 설정
-    height: 40, // 로고의 높이 설정
+    width: 120,
+    height: 40, 
     resizeMode: 'contain',
   },
   menuButton: {
@@ -58,8 +53,8 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   menuIcon: {
-    width: 20, // 햄버거 메뉴 아이콘의 너비 설정
-    height: 20, // 햄버거 메뉴 아이콘의 높이 설정
+    width: 20,
+    height: 20,
     resizeMode: 'contain',
   },
 });
