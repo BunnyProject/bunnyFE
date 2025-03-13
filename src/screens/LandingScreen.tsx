@@ -19,7 +19,7 @@ const LandingScreen: React.FC<Props> = ({ navigation }) => {
   const [isUserCreated, setIsUserCreated] = useState<boolean | null>(null); // 사용자 생성 여부
   const logStoredData = async () => {
     try {
-      // await AsyncStorage.removeItem('isUserCreated');
+      // await AsyncStorage.clear();
       const keys = await AsyncStorage.getAllKeys(); // 모든 키 가져오기
       const data = await AsyncStorage.multiGet(keys); // 모든 키의 값 가져오기
       console.log('AsyncStorage Data:', data); // 콘솔에 출력

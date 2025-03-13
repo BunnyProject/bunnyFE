@@ -9,12 +9,12 @@ export const useDeleteSaving = () => {
   const handleDeleteSaving = async (
     memberNo: number,
     savingId: number,
-    body: {categoryName: string; savingPrice: number} // Request Body 타입 추가
+    body: {categoryName: string; savingPrice: number}
   ): Promise<DeleteSavingResponse | null> => {
     setLoading(true);
     setError(null);
     try {
-      const response = await deleteSaving(memberNo, savingId, body); // Body 전달
+      const response = await deleteSaving(memberNo, savingId, body);
       setLoading(false);
       return response;
     } catch (err: any) {

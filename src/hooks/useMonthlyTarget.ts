@@ -16,11 +16,10 @@ export const useMonthlyTarget = (memberNo: number) => {
         const targetId = parsedData.targetId;
 
         if (targetId) {
-          // PUT 요청 (수정)
           const updatePayload = {
             targetId,
             totalTargetAmount: data.totalTargetAmount,
-            updateTargetList: data.targetList, // `updateTargetList`로 이름 변경
+            targetList: data.targetList,
           };
 
           console.log('Updating target with payload:', updatePayload);
@@ -33,7 +32,6 @@ export const useMonthlyTarget = (memberNo: number) => {
         }
       }
 
-      // POST 요청 (생성)
       console.log('Creating new target with payload:', data);
 
       const response = await createMonthlyTarget(memberNo, data);

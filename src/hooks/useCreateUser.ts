@@ -16,7 +16,7 @@ interface UserData {
 // createNewUser 반환 타입
 interface CreateUserResult {
   success: boolean;
-  userId?: number; // 성공 시 반환되는 사용자 ID
+  userId?: number; 
 }
 
 const useCreateUser = () => {

@@ -88,7 +88,7 @@ const AkkiScreen = () => {
   const [monthlySavingsState, setMonthlySavingsState] = useState<
     MonthlySaving[]
   >([]);
-  const [savingDetailsState, setSavingDetailsState] = useState<any>(null);
+  const [_savingDetailsState, setSavingDetailsState] = useState<any>(null);
   const {start: prevStart, end: prevEnd} = getPreviousMonthRange(
     currentYear,
     currentMonth,
@@ -215,6 +215,7 @@ const AkkiScreen = () => {
         }
       }
     };
+    // console.log(category1, category2, category3);
 
     fetchCategories();
   }, []);

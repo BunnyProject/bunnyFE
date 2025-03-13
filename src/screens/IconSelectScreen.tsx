@@ -85,7 +85,6 @@ const IconSelectScreen = () => {
         };
         await AsyncStorage.setItem('selectedIcons', JSON.stringify(savedData));
 
-        // navigation.navigate를 사용해 selectedIcons를 전달
         navigation.navigate('Akki', {selectedIcons});
       } else {
         Alert.alert(

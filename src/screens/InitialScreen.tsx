@@ -14,9 +14,9 @@ const InitialScreen = ({ navigation }: Props) => {
       const savedIcons = await AsyncStorage.getItem('selectedIcons');
       console.log('Saved Icons:', savedIcons);
       if (savedIcons) {
-        navigation.replace('Akki'); // 데이터가 있으면 AkkiScreen으로 이동
+        navigation.replace('Akki', undefined);
       } else {
-        navigation.replace('AkkiStartScreen'); // 데이터가 없으면 AkkiStartScreen으로 이동
+        navigation.replace('AkkiStartScreen', undefined);
       }
     };
 

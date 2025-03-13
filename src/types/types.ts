@@ -2,7 +2,7 @@
 export type RootStackParamList = {
   Landing: undefined;
   UserInfo: undefined;
-  UserInfo2: {name: string; birthDate: string; gender: string; job: string};
+  UserInfo2: {name: string; birthDate: string; gender: string; job: string} | undefined;
   UserInfo3: {
     salaryType: string;
     salary: string;
@@ -21,11 +21,11 @@ export type RootStackParamList = {
     workDays: string[];
     startTime: string;
     endTime: string;
-  };
+  }| undefined;
   HomeTab: undefined;
   Home: undefined;
   Bunny: undefined;
-  Akki: undefined;
+  Akki: { selectedIcons: { name: string; source: any; color: string }[]} | undefined;
   AkkiScreen: undefined;
   IconSelectScreen: undefined;
   AkkiStartScreen: undefined;

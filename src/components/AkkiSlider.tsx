@@ -19,7 +19,6 @@ export default function AkkiSlider({
   endLabel,
   step,
   defaultValue,
-  unit,
   onValueChange,
 }: CustomSliderProps) {
   const [sliderValue, setSliderValue] = useState(defaultValue);

@@ -1,8 +1,7 @@
-import React, {useState, useEffect} from 'react';
+import React from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {Image} from 'react-native';
-import {useNavigation} from '@react-navigation/native';
 import LandingScreen from '../screens/LandingScreen';
 import UserInfoScreen from '../screens/UserInfoScreen';
 import UserInfo2Screen from '../screens/UserInfo2Screen';
@@ -18,7 +17,6 @@ import Header from '../components/Header';
 import {RootStackParamList} from '../types/types';
 import InitialScreen from '../screens/InitialScreen';
 
-// 이미지 경로 불러오기
 const bunnyIcon = require('../assets/bunny.png');
 const savingIcon = require('../assets/Akki.png');
 const homeIcon = require('../assets/Home.png');
@@ -26,7 +24,6 @@ const homeIcon = require('../assets/Home.png');
 const Stack = createStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
 
-// TabBarIcon 컴포넌트 정의
 const TabBarIcon = ({
   routeName,
   color,
@@ -63,17 +60,18 @@ const SavingStackNavigator = () => {
   const SavingStack = createStackNavigator();
 
   return (
-    <SavingStack.Navigator screenOptions={{ headerShown: false }}>
+    <SavingStack.Navigator screenOptions={{headerShown: false}}>
       <SavingStack.Screen name="InitialScreen" component={InitialScreen} />
       <SavingStack.Screen name="AkkiStartScreen" component={AkkiStartScreen} />
-      <SavingStack.Screen name="IconSelectScreen" component={IconSelectScreen} />
+      <SavingStack.Screen
+        name="IconSelectScreen"
+        component={IconSelectScreen}
+      />
       <SavingStack.Screen name="Akki" component={AkkiScreen} />
     </SavingStack.Navigator>
   );
 };
 
-
-// HomeTabNavigator 수정
 const HomeTabNavigator = () => {
   return (
     <Tab.Navigator
@@ -88,6 +86,15 @@ const HomeTabNavigator = () => {
           paddingBottom: 10,
           borderTopLeftRadius: 35,
           borderTopRightRadius: 35,
+          backgroundColor: '#FFFFFF',
+          position: 'absolute',
+          borderTopWidth: 0,
+        
+          elevation: 15,
+          shadowColor: '#393939',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.1,
+          shadowRadius: 5,
         },
         tabBarLabelStyle: {
           fontSize: 12,
@@ -114,10 +121,8 @@ const HomeTabNavigator = () => {
   );
 };
 
-// HeaderWrapper 컴포넌트 정의
 const HeaderWrapper = () => <Header />;
 
-// MainNavigator 수정
 const MainNavigator: React.FC = () => {
   return (
     <Stack.Navigator initialRouteName="Landing">
@@ -165,6 +170,5 @@ const MainNavigator: React.FC = () => {
     </Stack.Navigator>
   );
 };
-
 
 export default MainNavigator;

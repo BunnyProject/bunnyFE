@@ -6,11 +6,8 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import SavingsModal from '../components/SavingModal';
 import {useTodayBunny} from '../hooks/useTodayBunny';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {PostTargetRequest} from '../types/types';
-// import {NavigationProp, useNavigation} from '@react-navigation/native';
 import {StackNavigationProp} from '@react-navigation/stack';
 import {RootStackParamList} from '../types/types';
-// import {iconData} from './IconSelectScreen';
 
 type HomeScreenProps = {
   navigation: StackNavigationProp<RootStackParamList, 'Home'>;

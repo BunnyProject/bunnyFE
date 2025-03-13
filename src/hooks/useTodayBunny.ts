@@ -1,10 +1,8 @@
 import {useState, useEffect, useMemo} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {getHomeSalary, getTodayBunny} from '../api/bunnyApi'; // 기존 API 호출 함수 import
+import {getHomeSalary, getTodayBunny} from '../api/bunnyApi';
 import {bunnyResponse, HomeMoneyResponse} from '../types/types';
 import moment from 'moment-timezone';
-
-// const response: bunnyResponse = await getTodayBunny(Number(userId));
 
 export const useTodayBunny = () => {
   const [data, setData] = useState<bunnyResponse['success'] | null>(null);

@@ -1,22 +1,30 @@
-import React, {useState, useEffect, useMemo} from 'react';
+import React, {useState, useEffect} from 'react';
 import {View, Text, StyleSheet, ScrollView} from 'react-native';
 import moment from 'moment-timezone';
 import Svg, {Defs, LinearGradient, Stop, Circle} from 'react-native-svg';
 import CustomSlider from '../components/Slider';
 import {useHomeMoney, useTodayBunny} from '../hooks/useTodayBunny';
-
 interface Earnings {
   total: number;
   current: number;
 }
 
 export default function BunnyScreen() {
-  const { start, end, data, loading, error } = useTodayBunny(); // useTodayBunny 훅 사용
-  const { data: homeMoneyData } = useHomeMoney(); // 추가 데이터 훅
+  const {start, end, data, loading} = useTodayBunny(); // useTodayBunny 훅 사용
+  const {data: homeMoneyData} = useHomeMoney(); // 추가 데이터 훅
   const ratePerMinute = data?.minMoney || 280; // 분당 금액 기본값
-  const [weeklyEarnings, setWeeklyEarnings] = useState<Earnings>({ total: 0, current: 0 });
-  const [monthlyEarnings, setMonthlyEarnings] = useState<Earnings>({ total: 0, current: 0 });
-  const [yearlyEarnings, setYearlyEarnings] = useState<Earnings>({ total: 0, current: 0 });
+  const [weeklyEarnings, setWeeklyEarnings] = useState<Earnings>({
+    total: 0,
+    current: 0,
+  });
+  const [monthlyEarnings, setMonthlyEarnings] = useState<Earnings>({
+    total: 0,
+    current: 0,
+  });
+  const [yearlyEarnings, setYearlyEarnings] = useState<Earnings>({
+    total: 0,
+    current: 0,
+  });
   const [elapsedTime, setElapsedTime] = useState(0);
   const [earnings, setEarnings] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
@@ -25,19 +33,20 @@ export default function BunnyScreen() {
   const ratePerSecond = homeMoneyData?.secondMoney || 0;
   const ratePerMin = homeMoneyData?.minMoney || 0;
   const ratePerHour = homeMoneyData?.hourMoney || 0;
-  
+
   useEffect(() => {
     if (!start || !end) return;
 
     const totalWorkTime = (end.getTime() - start.getTime()) / (1000 * 60); // 분 단위 근무 시간
-    const totalEarnings = Math.floor(totalWorkTime * ratePerMinute); // 하루 총 금액 계산
+    // const totalEarnings = Math.floor(totalWorkTime * ratePerMinute);
     const dailyEarnings = Math.floor(totalWorkTime * ratePerMinute); // 하루 총 금액 (소수점 처리)
-
 
     // 이주의 버니 (5일 기준)
     const weeklyTotalEarnings = Math.floor(dailyEarnings * 5); // 주 5일 근무
     const daysInWeek = moment().isoWeekday(); // 현재 주차의 요일 (1=월요일, 7=일요일)
-    const weeklyCurrentEarnings = Math.floor(dailyEarnings * Math.min(daysInWeek, 5)); // 현재 주차 동안의 금액
+    const weeklyCurrentEarnings = Math.floor(
+      dailyEarnings * Math.min(daysInWeek, 5),
+    ); // 현재 주차 동안의 금액
     setWeeklyEarnings({
       total: weeklyTotalEarnings,
       current: weeklyCurrentEarnings,
@@ -47,7 +56,9 @@ export default function BunnyScreen() {
     const daysInMonth = moment().daysInMonth(); // 현재 달의 총 일수
     const monthlyTotalEarnings = Math.floor(dailyEarnings * daysInMonth); // 월 근무 일수 기반
     const today = moment().date(); // 현재 일자
-    const monthlyCurrentEarnings = Math.floor(dailyEarnings * Math.min(today, daysInMonth)); // 현재까지의 금액
+    const monthlyCurrentEarnings = Math.floor(
+      dailyEarnings * Math.min(today, daysInMonth),
+    ); // 현재까지의 금액
     setMonthlyEarnings({
       total: monthlyTotalEarnings,
       current: monthlyCurrentEarnings,
@@ -56,7 +67,9 @@ export default function BunnyScreen() {
     // 올해의 버니
     const yearlyTotalEarnings = Math.floor(dailyEarnings * 261); // 261일 근무 (52주 * 5일 기준)
     const daysPassedThisYear = moment().dayOfYear(); // 올해 경과된 일수
-    const yearlyCurrentEarnings = Math.floor(dailyEarnings * daysPassedThisYear); // 현재까지의 금액
+    const yearlyCurrentEarnings = Math.floor(
+      dailyEarnings * daysPassedThisYear,
+    ); // 현재까지의 금액
     setYearlyEarnings({
       total: yearlyTotalEarnings,
       current: yearlyCurrentEarnings,
@@ -72,13 +85,15 @@ export default function BunnyScreen() {
         setElapsedTime(0);
         setTimeLeft((end.getTime() - start.getTime()) / 1000);
       } else {
-        const elapsedSeconds = Math.floor((now.getTime() - start.getTime()) / 1000);
+        const elapsedSeconds = Math.floor(
+          (now.getTime() - start.getTime()) / 1000,
+        );
         setElapsedTime(elapsedSeconds);
         setEarnings(Math.floor((elapsedSeconds / 60) * ratePerMinute));
         setTimeLeft(Math.floor((end.getTime() - now.getTime()) / 1000));
       }
     }, 1000);
-  
+
     return () => clearInterval(timer);
   }, [start, end, ratePerMinute]);
 
@@ -120,8 +135,7 @@ export default function BunnyScreen() {
           width={200}
           height={200}
           viewBox="0 0 200 200"
-          style={{ transform: [{ rotate: '-90deg' }] }}
-        >
+          style={{transform: [{rotate: '-90deg'}]}}>
           <Defs>
             <LinearGradient id="grad" x1="0" y1="0" x2="1" y2="0">
               <Stop offset="0%" stopColor="#DECDFF" />
@@ -161,8 +175,7 @@ export default function BunnyScreen() {
           {['초당', '분당', '시간당'].map((label, index) => (
             <View
               style={[styles.bottomItems, index < 2 && styles.bottomBorder]}
-              key={index}
-            >
+              key={index}>
               <Text style={styles.bottomlabel}>{label}</Text>
               <Text style={styles.bottomItem}>
                 {index === 0
