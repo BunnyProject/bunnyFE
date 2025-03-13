@@ -2,10 +2,38 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons'; // 아이콘 추가
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { RootStackParamList } from '../types/types';
+import { StackNavigationProp } from '@react-navigation/stack';
+
+type MoreScreenNavigationProp = StackNavigationProp<RootStackParamList, 'MoreScreen'>;
+
+const getData = async () => {
+  try {
+    const existingTarget = await AsyncStorage.getItem('existingTarget');
+    const isUserCreated = await AsyncStorage.getItem('isUserCreated');
+    const selectedIcons = await AsyncStorage.getItem('selectedIcons');
+    const totalTargetAmount = await AsyncStorage.getItem('totalTargetAmount');
+    const userId = await AsyncStorage.getItem('userId');
+    const userName = await AsyncStorage.getItem('userName');
+
+    return {
+      existingTarget: existingTarget ? JSON.parse(existingTarget) : null,
+      isUserCreated: isUserCreated === 'true',
+      selectedIcons: selectedIcons ? JSON.parse(selectedIcons) : null,
+      totalTargetAmount: totalTargetAmount ? parseInt(totalTargetAmount) : null,
+      userId,
+      userName,
+    };
+  } catch (e) {
+    console.error('AsyncStorage 데이터를 가져오는 중 오류가 발생했습니다:', e);
+    return null;
+  }
+};
 
 const MoreScreen = () => {
-  const navigation = useNavigation();
-
+  // const navigation = useNavigation();
+  const navigation = useNavigation<MoreScreenNavigationProp>();
   return (
     <View style={styles.container}>
       {/* 상단 뒤로가기 버튼 */}
