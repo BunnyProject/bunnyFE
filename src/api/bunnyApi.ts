@@ -7,26 +7,26 @@ import {
   PostTargetResponse,
 } from '../types/types';
 
-// 공통 에러 처리 함수
-const handleError = (error: any) => {
-  console.error('API Error:', error);
-  if (error.response) {
-    return error.response.data?.error?.message || '서버 요청에 실패했습니다.';
-  }
-  return '네트워크 오류가 발생했습니다.';
-};
+const isMock = process.env.NODE_ENV !== 'production';
 
 // 오늘의 버니 조회
 export const getTodayBunny = async (
   memberNo: number,
 ): Promise<bunnyResponse> => {
-  try {
+  if (isMock) {
+    return Promise.resolve({
+      resultType: 'SUCCESS',
+      success: {
+        minMoney: 123,
+        workingTime: '09:00:00',
+        quttingTime: '20:00:00',
+      },
+    });
+  } else {
     const response = await axiosInstance.get(apiEndpoints.bunny.getTodayBunny, {
       headers: {'member-no': memberNo},
     });
     return response.data;
-  } catch (error) {
-    throw new Error(handleError(error));
   }
 };
 
@@ -35,7 +35,15 @@ export const updateMonthlyTarget = async (
   memberNo: number,
   targetData: PostTargetRequest & {targetId: number},
 ) => {
-  try {
+  if (isMock) {
+    return Promise.resolve({
+      resultType: 'SUCCESS',
+      success: {
+        ...targetData,
+        updated: true,
+      },
+    });
+  } else {
     const response = await axiosInstance.put(
       apiEndpoints.bunny.updateMonthlyTarget,
       targetData,
@@ -44,8 +52,6 @@ export const updateMonthlyTarget = async (
       },
     );
     return response.data;
-  } catch (error) {
-    throw new Error(handleError(error));
   }
 };
 
@@ -54,7 +60,16 @@ export const createMonthlyTarget = async (
   memberNo: number,
   targetData: PostTargetRequest,
 ): Promise<PostTargetResponse> => {
-  try {
+  if (isMock) {
+    return Promise.resolve({
+      resultType: 'SUCCESS',
+      success: {
+        targetId: 999,
+        ...targetData,
+        created: true,
+      },
+    });
+  } else {
     const response = await axiosInstance.post<PostTargetResponse>(
       apiEndpoints.bunny.createMonthlyTarget,
       targetData,
@@ -63,8 +78,6 @@ export const createMonthlyTarget = async (
       },
     );
     return response.data;
-  } catch (error) {
-    throw new Error(handleError(error));
   }
 };
 
@@ -72,13 +85,20 @@ export const createMonthlyTarget = async (
 export const getHomeSalary = async (
   memberNo: number,
 ): Promise<HomeMoneyResponse> => {
-  try {
+  if (isMock) {
+    return Promise.resolve({
+      resultType: 'SUCCESS',
+      success: {
+        minMoney: 199,
+        hourMoney: 11961,
+        secondMoney: 3,
+      },
+    });
+  } else {
     const response = await axiosInstance.get(apiEndpoints.bunny.getHomeSalary, {
       headers: {'member-no': memberNo},
     });
     return response.data;
-  } catch (error) {
-    throw new Error(handleError(error));
   }
 };
 
@@ -87,7 +107,15 @@ export const deleteMonthlyTarget = async (
   memberNo: number,
   targetId: number,
 ) => {
-  try {
+  if (isMock) {
+    return Promise.resolve({
+      resultType: 'SUCCESS',
+      success: {
+        deletedTargetId: targetId,
+        deleted: true,
+      },
+    });
+  } else {
     const response = await axiosInstance.delete(
       apiEndpoints.bunny.deleteMonthlyTarget(targetId),
       {
@@ -95,7 +123,5 @@ export const deleteMonthlyTarget = async (
       },
     );
     return response.data;
-  } catch (error) {
-    throw new Error(handleError(error));
   }
 };

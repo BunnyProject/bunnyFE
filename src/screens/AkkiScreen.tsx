@@ -100,7 +100,7 @@ const AkkiScreen = () => {
     prevEnd,
     category1?.name || '',
     category2?.name || '',
-    category3?.name || '',
+    category3?.name || '기타',
   );
 
   const calculateDifference = () => {
@@ -171,9 +171,9 @@ const AkkiScreen = () => {
         const category2Data = iconData.find(
           icon => icon.name === secondCategory,
         );
-        const category3Data = iconData.find(
-          icon => icon.name === otherCategoryName,
-        );
+        const category3Data =
+          iconData.find(icon => icon.name === otherCategoryName) ||
+          iconData.find(icon => icon.name === '기타');
 
         if (category1Data) {
           setCategory1({
@@ -208,7 +208,7 @@ const AkkiScreen = () => {
           });
         } else {
           setCategory3({
-            name: '',
+            name: '기타',
             source: null,
             color: DEFAULT_COLOR,
           });

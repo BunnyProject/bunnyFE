@@ -6,35 +6,31 @@ import {
   TodaySavingResponse,
 } from '../types/types';
 
+const isMock = process.env.NODE_ENV !== 'production';
+
 export const refetchAll = async (
   memberNo: number,
   startInclusive: string,
   endInclusive: string,
   targetDay: string,
 ) => {
-  try {
-    const [todaySaving, monthlySavings, savingDetails] = await Promise.all([
-      fetchTodaySaving(memberNo), // 오늘의 아끼기
-      getMonthlySavings(memberNo, startInclusive, endInclusive), // 월별 아끼기
-      getSavingDetails(memberNo, targetDay), // 특정 날짜의 아끼기 상세
-    ]);
-
-    return {
-      todaySaving,
-      monthlySavings,
-      savingDetails,
-    };
-  } catch (error) {
-    console.error('Error refetching all savings:', error);
-    throw error;
-  }
+  // 실제 함수는 내부에서 각 API를 호출하므로, mock 분기는 각 API 함수에서 처리됨
+  const [todaySaving, monthlySavings, savingDetails] = await Promise.all([
+    fetchTodaySaving(memberNo),
+    getMonthlySavings(memberNo, startInclusive, endInclusive),
+    getSavingDetails(memberNo, targetDay),
+  ]);
+  return { todaySaving, monthlySavings, savingDetails };
 };
 
-// 아끼기 금액 설정
 export const createSavingAmount = async (params: SaveMoneyParams) => {
-  const {memberNo, ...savingData} = params; // memberNo를 헤더로, 나머지를 본문으로 전달
-
-  try {
+  if (isMock) {
+    return Promise.resolve({
+      resultType: 'SUCCESS',
+      success: { ...params, saved: true },
+    });
+  } else {
+    const {memberNo, ...savingData} = params;
     const response = await axiosInstance.post(
       apiEndpoints.save.createSavingAmount,
       savingData,
@@ -43,13 +39,9 @@ export const createSavingAmount = async (params: SaveMoneyParams) => {
       },
     );
     return response.data;
-  } catch (error: any) {
-    console.error('Error creating saving amount:', error);
-    throw new Error(error.response?.data?.error?.message || 'API 호출 실패');
   }
 };
 
-// 아끼기 항목 설정
 export const createSavingIcon = async (
   memberNo: number,
   iconData: {
@@ -57,7 +49,12 @@ export const createSavingIcon = async (
     categoryName2: string;
   },
 ) => {
-  try {
+  if (isMock) {
+    return Promise.resolve({
+      resultType: 'SUCCESS',
+      success: { ...iconData, created: true },
+    });
+  } else {
     const response = await axiosInstance.post(
       apiEndpoints.save.createSavingIcon,
       iconData,
@@ -66,19 +63,20 @@ export const createSavingIcon = async (
       },
     );
     return response.data;
-  } catch (error) {
-    console.error('Error creating saving icon:', error);
-    throw error;
   }
 };
 
-// 먼슬리 아끼기 조회
 export const getMonthlySavings = async (
   memberNo: number,
   startInclusive: string,
   endInclusive: string,
 ): Promise<any> => {
-  try {
+  if (isMock) {
+    return Promise.resolve([
+      { savingId: 1, savingDay: startInclusive, savingPrice: 1000 },
+      { savingId: 2, savingDay: endInclusive, savingPrice: 2000 },
+    ]);
+  } else {
     const response = await axiosInstance.get(
       apiEndpoints.save.getMonthlySavings,
       {
@@ -86,7 +84,6 @@ export const getMonthlySavings = async (
         params: {startInclusive, endInclusive},
       },
     );
-
     if (response.data && response.data.resultType === 'SUCCESS') {
       return response.data.success;
     } else {
@@ -94,15 +91,16 @@ export const getMonthlySavings = async (
         response.data?.error?.message || 'Unknown error occurred.',
       );
     }
-  } catch (error: any) {
-    console.error('Error fetching monthly savings:', error);
-    throw error;
   }
 };
 
-// 아끼기 상세 스케줄 조회
 export const getSavingDetails = async (memberNo: number, targetDay: string) => {
-  try {
+  if (isMock) {
+    return Promise.resolve({
+      resultType: 'SUCCESS',
+      success: { targetDay, details: 'mock details' },
+    });
+  } else {
     const response = await axiosInstance.get<SaveDetailResponse>(
       apiEndpoints.save.getSavingDetail,
       {
@@ -111,43 +109,62 @@ export const getSavingDetails = async (memberNo: number, targetDay: string) => {
       },
     );
     return response.data;
-  } catch (error) {
-    console.error('Error fetching saving details:', error);
-    throw error;
   }
 };
 
-// 아낀 내역 삭제
 export const deleteSaving = async (
   memberNo: number,
   savingId: number,
-  body: {categoryName: string; savingPrice: number}, // Body 타입 지정
+  body: {categoryName: string; savingPrice: number},
 ) => {
-  try {
+  if (isMock) {
+    return Promise.resolve({
+      resultType: 'SUCCESS',
+      success: { deletedSavingId: savingId, deleted: true },
+    });
+  } else {
     const response = await axiosInstance.delete(
       apiEndpoints.save.deleteSaving(savingId),
       {
         headers: {'member-no': memberNo},
-        data: body, // DELETE 요청에 Body 포함
+        data: body,
       },
     );
     return response.data;
-  } catch (error) {
-    console.error('Error deleting saving:', error);
-    throw error;
   }
 };
 
 export const fetchTodaySaving = async (
   memberNo: number,
 ): Promise<TodaySavingResponse> => {
-  try {
+  if (isMock) {
+    return Promise.resolve({
+      todayTotalMoney: 5000,
+      todaySavingCategoryList: [
+        {
+          categoryId: 1,
+          categoryName: '커피',
+          totalSavingChance: 2,
+          totalSavingCategoryMoney: 3000,
+        },
+        {
+          categoryId: 2,
+          categoryName: '담배',
+          totalSavingChance: 1,
+          totalSavingCategoryMoney: 4500,
+        },
+        {
+          categoryId: 3,
+          categoryName: '기타',
+          totalSavingChance: 1,
+          totalSavingCategoryMoney: 4500,
+        },
+      ],
+    });
+  } else {
     const response = await axiosInstance.get(apiEndpoints.save.getSavingToday, {
       headers: {'member-no': memberNo.toString()},
     });
     return response.data.success;
-  } catch (error: any) {
-    console.error("Error fetching today's savings:", error);
-    throw new Error(error.response?.data?.error?.message || 'API 호출 실패');
   }
 };

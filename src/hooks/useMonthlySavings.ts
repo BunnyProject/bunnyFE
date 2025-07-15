@@ -52,11 +52,12 @@ export const useMonthlySavings = (
             };
           }
 
+          // dots가 undefined일 가능성 방지
           if (!newMarkedDates[saving.savingDay].dots) {
             newMarkedDates[saving.savingDay].dots = [];
           }
 
-          newMarkedDates[saving.savingDay].dots.push({
+          (newMarkedDates[saving.savingDay].dots as { key: string; color: string }[]).push({
             key: saving.savingId.toString(),
             color: getCategoryColor(saving.categoryName),
           });
