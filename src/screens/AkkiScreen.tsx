@@ -314,6 +314,53 @@ const AkkiScreen = () => {
 
     const savingDay = selectedDate || new Date().toISOString().split('T')[0];
 
+    // Optimistic UI: 백업
+    const prevTodaySavingState = todaySavingState;
+    const prevMonthlySavingsState = monthlySavingsState;
+
+    // 1. Optimistically update todaySavingState
+    let newTodaySavingState = prevTodaySavingState;
+    if (prevTodaySavingState) {
+      // 카테고리별로 찾기
+      const catIdx = prevTodaySavingState.todaySavingCategoryList.findIndex(
+        (cat: any) => cat.categoryName === selectedCategory.name
+      );
+      let newList = [...prevTodaySavingState.todaySavingCategoryList];
+      if (catIdx !== -1) {
+        // 기존 카테고리 누적
+        newList[catIdx] = {
+          ...newList[catIdx],
+          totalSavingChance: newList[catIdx].totalSavingChance + 1,
+          totalSavingCategoryMoney:
+            newList[catIdx].totalSavingCategoryMoney + Number(inputAmount),
+        };
+      } else {
+        // 새 카테고리
+        newList.push({
+          categoryId: Date.now(), // 임시 ID
+          categoryName: selectedCategory.name,
+          totalSavingChance: 1,
+          totalSavingCategoryMoney: Number(inputAmount),
+        });
+      }
+      newTodaySavingState = {
+        ...prevTodaySavingState,
+        todayTotalMoney:
+          (prevTodaySavingState.todayTotalMoney || 0) + Number(inputAmount),
+        todaySavingCategoryList: newList,
+      };
+      setTodaySavingState(newTodaySavingState);
+    }
+    // 2. Optimistically update monthlySavingsState
+    const newMonthlyEntry = {
+      savingId: Date.now(), // 임시 ID
+      categoryName: selectedCategory.name,
+      savingChance: 1,
+      savingDay,
+      savingPrice: Number(inputAmount),
+    };
+    setMonthlySavingsState(prev => [...prev, newMonthlyEntry]);
+
     try {
       await handleSaveMoney({
         memberNo: memberNo!,
@@ -346,6 +393,9 @@ const AkkiScreen = () => {
       setInputAmount('');
       setDetail('');
     } catch (error) {
+      // 롤백
+      setTodaySavingState(prevTodaySavingState);
+      setMonthlySavingsState(prevMonthlySavingsState);
       Alert.alert('저장에 실패했습니다. 다시 시도해주세요.');
     }
   };
@@ -564,7 +614,7 @@ const AkkiScreen = () => {
           key={JSON.stringify(markedDates)}
           onSelectDate={handleSelectDate}
           onOpenBottomSheet={handleOpenBottomSheet}
-          savings={monthlySavingsState}
+          savings={monthlySavingsState || []}
           category1={category1}
           category2={category2}
           category3={category3}

@@ -61,16 +61,16 @@ export default function Info2Screen({navigation, route}: Props) {
   const toggleWorkDay = (day: string) => {
     if (day === '매일') {
       if (workDays.length === 7) {
-        setWorkDays([]); // 매일을 해제하면 모든 요일이 해제됨
+        setWorkDays([]); 
       } else {
-        setWorkDays(['월', '화', '수', '목', '금', '토', '일']); // 매일을 클릭하면 모든 요일이 선택됨
+        setWorkDays(['월', '화', '수', '목', '금', '토', '일']); 
       }
     } else {
       setWorkDays(
         prevDays =>
           prevDays.includes(day)
-            ? prevDays.filter(d => d !== day) // 이미 선택된 요일은 해제
-            : [...prevDays, day], // 새로 선택된 요일은 추가
+            ? prevDays.filter(d => d !== day)
+            : [...prevDays, day], 
       );
     }
   };
@@ -103,7 +103,7 @@ export default function Info2Screen({navigation, route}: Props) {
               maxToRenderPerBatch: 3,
             }}
             containerStyle={{
-              marginTop: -50, // 드롭다운과 필드 사이의 간격을 줄임
+              marginTop: -50,
             }}
           />
         </View>
@@ -113,7 +113,7 @@ export default function Info2Screen({navigation, route}: Props) {
         <View
           style={[
             styles.inputContainer,
-            salary && styles.completedInput, // 금액이 입력되면 보라색 테두리
+            salary && styles.completedInput,
           ]}>
           <TextInput
             style={styles.input}
@@ -162,16 +162,16 @@ export default function Info2Screen({navigation, route}: Props) {
               data={timeData}
               labelField="label"
               valueField="value"
-              placeholder="출근 시간을 선택하세요"
               value={startTime}
               onChange={item => setStartTime(item.value)}
-              maxHeight={100}
+              maxHeight={160}
               flatListProps={{
-                initialNumToRender: 2,
-                maxToRenderPerBatch: 2,
-                initialScrollIndex: timeData.findIndex(
-                  item => item.value === startTime,
-                ), // 현재 선택된 값으로 스크롤
+                initialScrollIndex: timeData.findIndex(item => item.value === startTime),
+                getItemLayout: (data, index) => ({
+                  length: 40,
+                  offset: 40 * index,
+                  index,
+                }),
               }}
             />
           </View>
@@ -187,23 +187,22 @@ export default function Info2Screen({navigation, route}: Props) {
               data={timeData}
               labelField="label"
               valueField="value"
-              placeholder="퇴근 시간을 선택하세요"
               value={endTime}
               onChange={item => setEndTime(item.value)}
-              maxHeight={100}
+              maxHeight={160}
               flatListProps={{
-                initialNumToRender: 2,
-                maxToRenderPerBatch: 2,
-                initialScrollIndex: timeData.findIndex(
-                  item => item.value === endTime,
-                ), // 현재 선택된 값으로 스크롤
+                initialScrollIndex: timeData.findIndex(item => item.value === endTime),
+                getItemLayout: (data, index) => ({
+                  length: 40,
+                  offset: 40 * index,
+                  index,
+                }),
               }}
             />
           </View>
         </View>
       </ScrollView>
 
-      {/* 버튼을 하단에 고정 */}
       <View style={styles.buttonContainer}>
         <TouchableOpacity
           style={styles.prevButton}
@@ -238,19 +237,18 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 20,
-    paddingBottom: 100,
+    paddingBottom: 250,
     flexGrow: 1,
     justifyContent: 'space-between',
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 10,
     textAlign: 'left',
+    marginBottom: -20,
   },
   subtitle: {
     fontSize: 16,
-    marginBottom: 30,
     textAlign: 'left',
     color: '#666',
   },
@@ -262,7 +260,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 10,
     height: 50,
-    marginBottom: 30,
     backgroundColor: '#fff',
   },
   input: {
@@ -280,7 +277,6 @@ const styles = StyleSheet.create({
   daysContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 30,
   },
   dayButton: {
     paddingVertical: 10,
@@ -302,7 +298,6 @@ const styles = StyleSheet.create({
   timeContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 20,
   },
   dropdownContainer: {
     borderWidth: 1,
@@ -310,7 +305,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 10,
     height: 50,
-    marginBottom: 30,
     flex: 1,
     marginHorizontal: 5,
     backgroundColor: '#fff',
@@ -319,7 +313,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E7E7E7',
     borderRadius: 8,
-    marginBottom: 30,
     paddingHorizontal: 10,
     height: 50,
   },
@@ -361,6 +354,6 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 16,
-    marginBottom: 1,
+    marginBottom: -40,
   },
 });

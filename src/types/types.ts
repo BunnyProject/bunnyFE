@@ -30,7 +30,7 @@ export type RootStackParamList = {
   IconSelectScreen: undefined;
   AkkiStartScreen: undefined;
   MoreScreen: undefined;
-  Saving: undefined;
+  Saving: { screen: string } | undefined;
 };
 
 // TabBarIcon Props

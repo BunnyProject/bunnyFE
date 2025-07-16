@@ -180,7 +180,7 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
                     if (!category) return null;
 
                     const matchingDetails =
-                      data?.success.detailSaveMoneyList.filter(item =>
+                      (data?.success?.detailSaveMoneyList || []).filter(item =>
                         item.detail.includes(category.name),
                       );
 
@@ -196,7 +196,7 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
                       : 0;
 
                     return (
-                      <View key={index} style={styles.categoryRow}>
+                      <View key={category.name ? `${category.name}-${index}` : index} style={styles.categoryRow}>
                         <View
                           style={[
                             styles.dot,
@@ -222,8 +222,8 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
                   })}
                 </View>
 
-                {data?.success.detailSaveMoneyList
-                  ?.sort(
+                {(data?.success?.detailSaveMoneyList || [])
+                  .sort(
                     (a, b) =>
                       new Date(a.savingId).getTime() -
                       new Date(b.savingId).getTime(),

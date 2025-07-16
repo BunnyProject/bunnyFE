@@ -4,13 +4,11 @@ import { enableScreens } from 'react-native-screens';  // 여기에 추가
 import MainNavigator from './src/navigation/MainNavigation';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// 네이티브 화면 처리 성능 향상을 위해 enableScreens 호출
 enableScreens();
 
 const App: React.FC = () => {
   useEffect(() => {
-    // 앱 실행 시 초기화
-    clearAsyncStorage();
+    // clearAsyncStorage();
   }, []);
   return (
     <NavigationContainer>

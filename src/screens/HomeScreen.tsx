@@ -49,7 +49,7 @@ export default function HomeScreen({navigation}: HomeScreenProps) {
       const selectedIcons = await AsyncStorage.getItem('selectedIcons');
       if (!selectedIcons) {
         // selectedIcons가 없으면 AkkiStartScreen으로 이동
-        navigation.navigate('AkkiStartScreen');
+        navigation.navigate('Saving', { screen: 'AkkiStartScreen' });
         return;
       }
 
@@ -57,7 +57,7 @@ export default function HomeScreen({navigation}: HomeScreenProps) {
       setIsModalVisible(true);
     } catch (error) {
       console.error('Failed to check selectedIcons:', error);
-      navigation.navigate('AkkiStartScreen'); // 오류 발생 시 안전하게 AkkiStartScreen으로 이동
+      navigation.navigate('Saving', { screen: 'AkkiStartScreen' }); // 오류 발생 시 안전하게 AkkiStartScreen으로 이동
     }
   };
 

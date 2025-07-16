@@ -63,10 +63,13 @@ const AkkiBottomSheet: React.FC<AkkiBottomSheetProps> = ({
         const category2Data = iconData.find(
           icon => icon.name === secondCategory,
         );
-        const category3Data = iconData.find(
+        let category3Data = iconData.find(
           icon => icon.name === otherCategoryName,
         );
-
+        if (!category3Data) {
+          // '기타' 아이콘이 없으면 기본값으로 설정
+          category3Data = iconData.find(icon => icon.name === '기타') || { name: '기타', source: null };
+        }
         setCategory1({
           ...category1Data,
           color: CATEGORY1_COLOR,
@@ -132,16 +135,18 @@ const AkkiBottomSheet: React.FC<AkkiBottomSheetProps> = ({
           <View style={styles.categoryContainer}>
             {[category1, category2, category3]
               .filter(category => category)
-              .map(category => (
+              .map((category, idx) => (
                 <TouchableOpacity
-                  key={category.name}
+                  key={category.name ? `${category.name}-${idx}` : idx}
                   style={[
                     styles.categoryButton,
                     selectedCategory?.name === category.name &&
                       styles.selectedButton,
                   ]}
                   onPress={() => setSelectedCategory(category)}>
-                  <Image source={category.source} style={styles.icon} />
+                  {category.source && (
+                    <Image source={category.source} style={styles.icon} />
+                  )}
                   <Text style={styles.categoryText}>{category.name}</Text>
                 </TouchableOpacity>
               ))}
