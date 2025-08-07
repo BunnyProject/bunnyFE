@@ -36,33 +36,12 @@
 
 ## 🔍 주요 화면 미리보기
 
-| 홈 화면 (수입 그래프 상) | 홈 화면 (수입 그래프 하) | 절약 입력 (카테고리 선택) | 절약 달력 |
+| 홈 랜딩 | 절약페이지 랜딩 | 홈 (수입 그래프 상) | 홈 (수입 그래프 하) |
 |---------------------|---------------------|--------------------------|-----------|
-|![image (8)](https://github.com/user-attachments/assets/096f7a80-a020-4ceb-a0ea-c0040e2657c9)|![image (9)](https://github.com/user-attachments/assets/53050bf1-31ef-4dbe-b4bf-ed576c894303)| ![image (6)](https://github.com/user-attachments/assets/f811cff5-4233-466e-b5ed-0118b7bcbe49) | ![image (7)](https://github.com/user-attachments/assets/ec3d3e9a-8111-40c3-a59e-f260f4dd7f32) |
+|<img width="347" height="678" alt="image (10)" src="https://github.com/user-attachments/assets/05f59699-dda3-44b8-95dd-4069ecf643f5" />| <img width="364" height="758" alt="image (9)" src="https://github.com/user-attachments/assets/e011d7d4-b232-44e9-9d7e-b7c313f31845" />|![image (8)](https://github.com/user-attachments/assets/096f7a80-a020-4ceb-a0ea-c0040e2657c9)|![image (9)](https://github.com/user-attachments/assets/53050bf1-31ef-4dbe-b4bf-ed576c894303)|
+
+| 절약 항목 (카테고리 선택)| 절약 페이지 | 절약 달력 |절약 내역 | 
+|---------------------|---------------------|--------------------------|-----------|
+| ![image (6)](https://github.com/user-attachments/assets/f811cff5-4233-466e-b5ed-0118b7bcbe49)|<img width="362" height="751" alt="image (6)" src="https://github.com/user-attachments/assets/35558813-109f-44c6-9bb6-e4facb16084d" />| ![image (7)](https://github.com/user-attachments/assets/ec3d3e9a-8111-40c3-a59e-f260f4dd7f32) |<img width="367" height="672" alt="image (7)" src="https://github.com/user-attachments/assets/381a3d94-cda3-43a6-8257-d4a58eb05893" /> |
 
 ---
-
-## 💡 구현 상세
-
-### 실시간 수입 시각화
-
-- `useTodayBunny` 훅을 통해 출퇴근 시간 기준 현재 수입을 1초 단위로 갱신
-- `SVG`의 `strokeDashoffset`과 `strokeDasharray`를 활용해 원형 진행률 바 구현
-
-### 절약 목표 설정
-
-- 카테고리별 슬라이더(`AkkiSlider`) 조절로 100회 기준 예상 금액 계산
-- 목표 입력 후 서버와 로컬 상태를 동기화 (`useMonthlyTarget`)
-
-### 절약 기록 관리
-
-- `react-native-calendars`로 날짜별 절약 항목 표시
-- 카테고리별 색상 유지 → 시각적 일관성 강화
-- 모달을 통해 항목 수정 및 삭제 가능
-
-### 사용자 정보 입력
-
-- `UserInfoScreen`에서 이름, 생년월일, 직업, 시급 등 기본 정보 입력
-- AsyncStorage를 통해 로그인 없이도 사용자 정보 및 기록 유지
-
-
